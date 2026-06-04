@@ -62,63 +62,73 @@
     </section>
 
     <!-- ─── 입력 ─── -->
-    <section id="view-add" class="view">
-      <div class="section-head">
-        <h2>거래 입력</h2>
-        <p class="muted">개인/사업을 구분해 간편하게 기록하세요.</p>
-      </div>
-      <form id="txForm" class="tx-form" novalidate>
-        <div class="field">
-          <label>구분</label>
-          <div class="seg" role="radiogroup">
-            <button type="button" class="seg-btn active" data-scope="business">💼 사업</button>
-            <button type="button" class="seg-btn" data-scope="personal">🏠 개인</button>
-          </div>
+    <!-- ─── 입력 팝업(모달) ─── -->
+    <div id="inputOverlay" class="modal-overlay" hidden>
+      <div class="modal-sheet">
+        <div class="modal-head">
+          <strong>거래 입력</strong>
+          <button type="button" id="inputClose" class="modal-close" aria-label="닫기">✕</button>
         </div>
-        <div class="field">
-          <label>유형</label>
-          <div class="seg" role="radiogroup">
-            <button type="button" class="seg-btn type-btn active" data-type="expense">지출 / 비용</button>
-            <button type="button" class="seg-btn type-btn" data-type="income">수입 / 매출</button>
-          </div>
-        </div>
-        <div class="field">
-          <label for="txAmount">금액 (원)</label>
-          <input type="text" id="txAmount" inputmode="numeric" placeholder="0" autocomplete="off" />
-        </div>
-        <div class="field">
-          <label for="txCategory">카테고리</label>
-          <select id="txCategory"></select>
-          <!-- 카테고리 추가/삭제 -->
-          <button type="button" id="catEditToggle" class="cat-edit-toggle">＋ 카테고리 추가·삭제</button>
-          <div id="catEditor" class="cat-editor" hidden>
-            <div id="catPills" class="cat-pills"></div>
-            <div class="cat-add">
-              <input type="text" id="catAddInput" placeholder="새 카테고리 이름" autocomplete="off" />
-              <button type="button" id="catAddBtn" class="cat-add-btn">＋ 추가</button>
+        <div class="modal-body">
+          <form id="txForm" class="tx-form" novalidate>
+            <div class="field">
+              <label>구분</label>
+              <div class="seg" role="radiogroup">
+                <button type="button" class="seg-btn active" data-scope="business">💼 사업</button>
+                <button type="button" class="seg-btn" data-scope="personal">🏠 개인</button>
+              </div>
             </div>
-          </div>
+            <div class="field">
+              <label>유형</label>
+              <div class="seg" role="radiogroup">
+                <button type="button" class="seg-btn type-btn active" data-type="expense">지출 / 비용</button>
+                <button type="button" class="seg-btn type-btn" data-type="income">수입 / 매출</button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="txAmount">금액 (원)</label>
+              <input type="text" id="txAmount" inputmode="numeric" placeholder="0" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label for="txCategory">카테고리</label>
+              <select id="txCategory"></select>
+              <button type="button" id="catEditToggle" class="cat-edit-toggle">＋ 카테고리 추가·삭제</button>
+              <div id="catEditor" class="cat-editor" hidden>
+                <div id="catPills" class="cat-pills"></div>
+                <div class="cat-add">
+                  <input type="text" id="catAddInput" placeholder="새 카테고리 이름" autocomplete="off" />
+                  <button type="button" id="catAddBtn" class="cat-add-btn">＋ 추가</button>
+                </div>
+              </div>
+            </div>
+            <div class="field">
+              <label for="txDate">날짜</label>
+              <input type="date" id="txDate" />
+            </div>
+            <div class="field">
+              <label>반복 <small class="muted">(정기 구독·임대료 등 자동 등록)</small></label>
+              <div class="seg" role="radiogroup">
+                <button type="button" class="seg-btn rep-btn active" data-repeat="once">한 번</button>
+                <button type="button" class="seg-btn rep-btn" data-repeat="monthly">🔁 매월</button>
+                <button type="button" class="seg-btn rep-btn" data-repeat="yearly">🔁 매년</button>
+              </div>
+            </div>
+            <div class="field">
+              <label>사진 첨부 <small class="muted">(영수증 등, 선택)</small></label>
+              <label for="txPhoto" class="photo-add-btn">📷 사진 추가</label>
+              <input type="file" id="txPhoto" accept="image/*" multiple hidden />
+              <div id="photoPreview" class="photo-preview"></div>
+            </div>
+            <div class="field">
+              <label for="txMemo">메모 <small class="muted">(선택)</small></label>
+              <input type="text" id="txMemo" placeholder="예: 6월 클라이언트 A 용역비" autocomplete="off" />
+            </div>
+            <button type="submit" class="btn-primary">기록 저장</button>
+            <p id="formMsg" class="form-msg" aria-live="polite"></p>
+          </form>
         </div>
-        <div class="field">
-          <label for="txDate">날짜</label>
-          <input type="date" id="txDate" />
-        </div>
-        <div class="field">
-          <label>반복 <small class="muted">(정기 구독·임대료 등 자동 등록)</small></label>
-          <div class="seg" role="radiogroup">
-            <button type="button" class="seg-btn rep-btn active" data-repeat="once">한 번</button>
-            <button type="button" class="seg-btn rep-btn" data-repeat="monthly">🔁 매월</button>
-            <button type="button" class="seg-btn rep-btn" data-repeat="yearly">🔁 매년</button>
-          </div>
-        </div>
-        <div class="field">
-          <label for="txMemo">메모 <small class="muted">(선택)</small></label>
-          <input type="text" id="txMemo" placeholder="예: 6월 클라이언트 A 용역비" autocomplete="off" />
-        </div>
-        <button type="submit" class="btn-primary">기록 저장</button>
-        <p id="formMsg" class="form-msg" aria-live="polite"></p>
-      </form>
-    </section>
+      </div>
+    </div>
 
     <!-- ─── 내역 ─── -->
     <section id="view-list" class="view">
@@ -209,6 +219,12 @@
       <button class="menu-item" data-view="assets"><span>💰</span> 자산 관리</button>
       <button class="menu-item" data-view="recurring"><span>🔁</span> 정기 거래 관리</button>
     </div>
+  </div>
+
+  <!-- ===== 사진 보기 오버레이 ===== -->
+  <div id="photoOverlay" class="photo-overlay" hidden>
+    <button type="button" id="photoClose" class="photo-close" aria-label="닫기">✕</button>
+    <div id="photoViewer" class="photo-viewer"></div>
   </div>
 
   <!-- ===== 우하단 거래 입력 버튼 ===== -->

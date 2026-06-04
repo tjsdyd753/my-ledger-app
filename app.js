@@ -42,14 +42,15 @@
     assets:       load(AST_KEY, []),
     assetCategories: load(ACAT_KEY, JSON.parse(JSON.stringify(DEFAULT_ASSET_CATS))),
     month: new Date(),
-    form: { scope: "business", type: "expense", repeat: "once" },
+    form: { scope: "business", type: "expense", repeat: "once", photos: [] },
     listFilter: "all",
     dashScope: "business",
     selectedDay: null,
     pickerYear: null,
     assetKind: "asset",
     currentView: "dashboard",
-    menuOpen: false
+    menuOpen: false,
+    inputOpen: false
   };
 
   /* ---------- 유틸 ---------- */
@@ -77,7 +78,25 @@
   }
   // 입력 화면이거나 메뉴가 열려 있으면 입력 버튼을 숨깁니다
   function updateFab() {
-    $("fab").hidden = state.menuOpen || state.currentView === "add";
+    $("fab").hidden = state.menuOpen || state.inputOpen;
+  }
+  // 입력 팝업 열기/닫기
+  function openInput() {
+    resetInputForm();
+    state.inputOpen = true; $("inputOverlay").hidden = false; updateFab();
+  }
+  function closeInput() {
+    state.inputOpen = false; $("inputOverlay").hidden = true; updateFab();
+  }
+  function resetInputForm() {
+    $("txAmount").value = ""; $("txMemo").value = "";
+    $("txDate").value = todayStr();
+    state.form.photos = []; renderPhotoPreview();
+    $("formMsg").textContent = "";
+    // 반복은 항상 '한 번'으로 초기화
+    state.form.repeat = "once";
+    document.querySelectorAll(".rep-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.repeat === "once"); });
+    var ed = $("catEditor"); if (ed) { ed.hidden = true; $("catEditToggle").textContent = "＋ 카테고리 추가·삭제"; }
   }
 
   /* ================= 월 이동 ================= */
@@ -214,8 +233,15 @@
     if (!list.length) { box.innerHTML = head + '<p class="day-hint">이 날은 기록된 거래가 없어요.</p>'; return; }
     box.innerHTML = head + list.map(function (t) {
       var sign = t.type === "income" ? "+" : "-";
-      return '<div class="day-row"><span class="day-cat">' + esc(t.category) + (t.memo ? ' · ' + esc(t.memo) : '') + '</span><span class="tx-amt ' + t.type + '">' + sign + won(t.amount) + '</span><button class="tx-del" data-id="' + t.id + '" aria-label="삭제">×</button></div>';
+      var photo = (t.photos && t.photos.length) ? '<button class="photo-btn" data-photo="' + t.id + '" aria-label="사진 보기">📷</button>' : '';
+      return '<div class="day-row"><span class="day-cat">' + esc(t.category) + (t.memo ? ' · ' + esc(t.memo) : '') + '</span>' + photo + '<span class="tx-amt ' + t.type + '">' + sign + won(t.amount) + '</span><button class="tx-del" data-id="' + t.id + '" aria-label="삭제">×</button></div>';
     }).join("");
+    box.querySelectorAll(".photo-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var tx = state.transactions.filter(function (t) { return t.id === btn.dataset.photo; })[0];
+        if (tx && tx.photos) openPhotos(tx.photos);
+      });
+    });
     box.querySelectorAll(".tx-del").forEach(function (btn) {
       btn.addEventListener("click", function () {
         if (!confirm("이 거래를 삭제할까요?")) return;
@@ -284,32 +310,87 @@
       if (!amount || amount <= 0) { msg.textContent = "금액을 올바르게 입력해 주세요."; msg.className = "form-msg err"; return; }
       var date = $("txDate").value || todayStr();
       var base = { scope: state.form.scope, type: state.form.type, category: $("txCategory").value, amount: amount, memo: $("txMemo").value.trim() };
+      var photos = state.form.photos.slice();
 
-      if (state.form.repeat === "once") {
-        state.transactions.push(Object.assign({ id: uid(), date: date }, base));
-        save(TX_KEY, state.transactions);
-        msg.textContent = "✓ 저장되었습니다.";
-      } else {
-        // 이중 클릭 등으로 동일한 정기거래가 두 번 등록되는 것을 방지
-        var dup = state.recurring.some(function (x) {
-          return x.scope === base.scope && x.type === base.type && x.category === base.category &&
-                 x.amount === base.amount && x.memo === base.memo &&
-                 x.interval === state.form.repeat && x.startDate === date;
-        });
-        if (!dup) {
-          var rule = Object.assign({ id: uid(), interval: state.form.repeat, startDate: date, nextDate: date }, base);
-          state.recurring.push(rule); save(REC_KEY, state.recurring);
+      try {
+        if (state.form.repeat === "once") {
+          var tx = Object.assign({ id: uid(), date: date }, base);
+          if (photos.length) tx.photos = photos;
+          state.transactions.push(tx);
+          save(TX_KEY, state.transactions);
+          msg.textContent = "✓ 저장되었습니다.";
+        } else {
+          // 이중 클릭 등으로 동일한 정기거래가 두 번 등록되는 것을 방지
+          var dup = state.recurring.some(function (x) {
+            return x.scope === base.scope && x.type === base.type && x.category === base.category &&
+                   x.amount === base.amount && x.memo === base.memo &&
+                   x.interval === state.form.repeat && x.startDate === date;
+          });
+          if (!dup) {
+            var rule = Object.assign({ id: uid(), interval: state.form.repeat, startDate: date, nextDate: date }, base);
+            if (photos.length) rule.photos = photos;
+            state.recurring.push(rule); save(REC_KEY, state.recurring);
+          }
+          generateRecurring();
+          msg.textContent = "✓ 정기 거래로 등록했습니다 (" + (state.form.repeat === "monthly" ? "매월" : "매년") + ").";
         }
-        generateRecurring();
-        msg.textContent = "✓ 정기 거래로 등록했습니다 (" + (state.form.repeat === "monthly" ? "매월" : "매년") + ").";
+      } catch (err) {
+        msg.textContent = "저장 공간이 부족합니다. 사진 수를 줄여 주세요."; msg.className = "form-msg err";
+        return;
       }
-      msg.className = "form-msg ok";
-      $("txAmount").value = ""; $("txMemo").value = "";
       renderAll();
-      setTimeout(function () { msg.textContent = ""; }, 2500);
+      closeInput();
     });
     refreshCategoryOptions();
   }
+
+  /* ================= 사진 첨부 ================= */
+  // 용량 절약을 위해 긴 변을 1024px로 줄이고 JPEG로 압축
+  function resizeImage(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        var img = new Image();
+        img.onload = function () {
+          var max = 1024, w = img.width, h = img.height;
+          if (w > h && w > max) { h = Math.round(h * max / w); w = max; }
+          else if (h > max) { w = Math.round(w * max / h); h = max; }
+          var c = document.createElement("canvas"); c.width = w; c.height = h;
+          c.getContext("2d").drawImage(img, 0, 0, w, h);
+          resolve(c.toDataURL("image/jpeg", 0.7));
+        };
+        img.onerror = reject;
+        img.src = reader.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+  function renderPhotoPreview() {
+    var box = $("photoPreview");
+    box.innerHTML = state.form.photos.map(function (src, i) {
+      return '<span class="photo-thumb"><img src="' + src + '" alt="첨부 사진"/><button type="button" class="photo-thumb-del" data-i="' + i + '" aria-label="삭제">✕</button></span>';
+    }).join("");
+    box.querySelectorAll(".photo-thumb-del").forEach(function (btn) {
+      btn.addEventListener("click", function () { state.form.photos.splice(+btn.dataset.i, 1); renderPhotoPreview(); });
+    });
+  }
+  function setupPhotoInput() {
+    $("txPhoto").addEventListener("change", function (e) {
+      var files = Array.prototype.slice.call(e.target.files || []);
+      var jobs = files.map(function (f) { return resizeImage(f); });
+      Promise.all(jobs).then(function (urls) {
+        urls.forEach(function (u) { state.form.photos.push(u); });
+        renderPhotoPreview();
+      }).catch(function () { alert("사진을 불러오지 못했습니다."); });
+      e.target.value = ""; // 같은 파일 다시 선택 가능하도록 초기화
+    });
+  }
+  function openPhotos(photos) {
+    $("photoViewer").innerHTML = (photos || []).map(function (src) { return '<img src="' + src + '" alt="첨부 사진"/>'; }).join("");
+    $("photoOverlay").hidden = false;
+  }
+  function closePhotos() { $("photoOverlay").hidden = true; $("photoViewer").innerHTML = ""; }
 
   /* ================= 내역 ================= */
   function renderList() {
@@ -321,8 +402,15 @@
     box.innerHTML = list.map(function (t) {
       var icon = t.scope === "business" ? "💼" : "🏠", scopeKo = t.scope === "business" ? "사업" : "개인", sign = t.type === "income" ? "+" : "-";
       var rec = t.recurringId ? ' <span class="rec-tag">🔁</span>' : '';
-      return '<div class="tx-item ' + t.scope + '"><div class="tx-badge">' + icon + '</div><div class="tx-main"><div class="tx-cat">' + esc(t.category) + (t.memo ? ' · ' + esc(t.memo) : '') + rec + '</div><div class="tx-meta"><span class="scope-tag">' + scopeKo + '</span> · ' + t.date + '</div></div><div class="tx-amt ' + t.type + '">' + sign + won(t.amount) + '</div><button class="tx-del" data-id="' + t.id + '" aria-label="삭제">×</button></div>';
+      var photo = (t.photos && t.photos.length) ? '<button class="photo-btn" data-photo="' + t.id + '" aria-label="사진 보기">📷' + (t.photos.length > 1 ? '<sup>' + t.photos.length + '</sup>' : '') + '</button>' : '';
+      return '<div class="tx-item ' + t.scope + '"><div class="tx-badge">' + icon + '</div><div class="tx-main"><div class="tx-cat">' + esc(t.category) + (t.memo ? ' · ' + esc(t.memo) : '') + rec + '</div><div class="tx-meta"><span class="scope-tag">' + scopeKo + '</span> · ' + t.date + '</div></div>' + photo + '<div class="tx-amt ' + t.type + '">' + sign + won(t.amount) + '</div><button class="tx-del" data-id="' + t.id + '" aria-label="삭제">×</button></div>';
     }).join("");
+    box.querySelectorAll(".photo-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var tx = state.transactions.filter(function (t) { return t.id === btn.dataset.photo; })[0];
+        if (tx && tx.photos) openPhotos(tx.photos);
+      });
+    });
     box.querySelectorAll(".tx-del").forEach(function (btn) {
       btn.addEventListener("click", function () {
         if (!confirm("이 거래를 삭제할까요?")) return;
@@ -343,8 +431,11 @@
   function exportCSV() {
     var list = state.transactions.filter(function (t) { return inMonth(t, state.month); });
     if (!list.length) { alert("이번 달 내보낼 거래가 없습니다."); return; }
-    var header = ["날짜", "구분", "유형", "카테고리", "금액", "메모"];
-    var rows = list.map(function (t) { return [t.date, t.scope === "business" ? "사업" : "개인", t.type === "income" ? "수입" : "지출", t.category, t.amount, '"' + (t.memo || "").replace(/"/g, '""') + '"'].join(","); });
+    var header = ["날짜", "구분", "유형", "카테고리", "금액", "메모", "사진"];
+    var rows = list.map(function (t) {
+      var photo = (t.photos && t.photos.length) ? "📷 " + t.photos.length + "장" : "";
+      return [t.date, t.scope === "business" ? "사업" : "개인", t.type === "income" ? "수입" : "지출", t.category, t.amount, '"' + (t.memo || "").replace(/"/g, '""') + '"', photo].join(",");
+    });
     var csv = "\uFEFF" + header.join(",") + "\n" + rows.join("\n");
     var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" }), url = URL.createObjectURL(blob), a = document.createElement("a");
     a.href = url; a.download = "한손_" + ymKey(state.month) + ".csv"; a.click(); URL.revokeObjectURL(url);
@@ -463,7 +554,11 @@
     $("menuBtn").addEventListener("click", function () { state.menuOpen = true; $("menuOverlay").hidden = false; updateFab(); });
     $("menuOverlay").addEventListener("click", function (e) { if (e.target === $("menuOverlay")) { state.menuOpen = false; $("menuOverlay").hidden = true; updateFab(); } });
     document.querySelectorAll(".menu-item").forEach(function (item) {
-      item.addEventListener("click", function () { state.menuOpen = false; $("menuOverlay").hidden = true; switchView(item.dataset.view); });
+      item.addEventListener("click", function () {
+        state.menuOpen = false; $("menuOverlay").hidden = true;
+        if (item.dataset.view === "add") { openInput(); }
+        else { switchView(item.dataset.view); }
+      });
     });
   }
 
@@ -487,7 +582,12 @@
     $("prevMonth").addEventListener("click", function () { changeMonth(-1); });
     $("nextMonth").addEventListener("click", function () { changeMonth(1); });
     setupForm(); setupListControls(); setupDashToggle(); setupPicker(); setupMenu(); setupAssets();
-    $("fab").addEventListener("click", function () { switchView("add"); });
+    $("fab").addEventListener("click", function () { openInput(); });
+    $("inputClose").addEventListener("click", function () { closeInput(); });
+    $("inputOverlay").addEventListener("click", function (e) { if (e.target === $("inputOverlay")) closeInput(); });
+    setupPhotoInput();
+    $("photoClose").addEventListener("click", closePhotos);
+    $("photoOverlay").addEventListener("click", function (e) { if (e.target === $("photoOverlay")) closePhotos(); });
     updateFab();
 
     generateRecurring(); // 앱 열 때 밀린 정기 거래 자동 등록
