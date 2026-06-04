@@ -30,7 +30,8 @@
     </div>
     <div class="month-picker">
       <button id="prevMonth" aria-label="이전 달">‹</button>
-      <span id="currentMonth">2026.06</span>
+      <!-- 이 글자를 누르면 연/월 선택창이 뜹니다 -->
+      <button id="currentMonth" class="month-label" aria-label="연·월 선택">2026.06</button>
       <button id="nextMonth" aria-label="다음 달">›</button>
     </div>
   </header>
@@ -40,44 +41,45 @@
 
     <!-- ─── 1) 대시보드 ─── -->
     <section id="view-dashboard" class="view active">
+
+      <!-- 사업 / 개인 전환 토글 -->
+      <div class="dash-toggle seg" id="dashToggle">
+        <button class="seg-btn active" data-dscope="business">💼 사업</button>
+        <button class="seg-btn" data-dscope="personal">🏠 개인</button>
+      </div>
+
       <div class="section-head">
-        <h2><span id="dashMonthLabel">6월</span> 한눈에 보기</h2>
-        <p class="muted">이번 달 돈의 흐름과 자산 현황입니다.</p>
+        <h2 id="dashTitle">사업 대시보드</h2>
+        <p class="muted"><span id="dashMonthLabel">6월</span> 기준 분석</p>
       </div>
 
-      <!-- 핵심 지표 카드 -->
-      <div class="kpi-grid">
-        <div class="kpi-card biz">
-          <span class="kpi-label">사업 손익</span>
-          <strong id="kpiBizProfit" class="kpi-value">₩0</strong>
-          <span class="kpi-sub"><em id="kpiBizIncome">매출 ₩0</em> · <em id="kpiBizExpense">비용 ₩0</em></span>
-        </div>
-        <div class="kpi-card personal">
-          <span class="kpi-label">개인 수지</span>
-          <strong id="kpiPersonalBalance" class="kpi-value">₩0</strong>
-          <span class="kpi-sub"><em id="kpiPersonalIncome">수입 ₩0</em> · <em id="kpiPersonalExpense">지출 ₩0</em></span>
-        </div>
-        <div class="kpi-card total">
-          <span class="kpi-label">이번 달 순흐름 (전체)</span>
-          <strong id="kpiNetFlow" class="kpi-value">₩0</strong>
-          <span class="kpi-sub">사업 + 개인 합산</span>
-        </div>
-      </div>
+      <!-- 핵심 지표 (JS가 4개 카드를 채웁니다) -->
+      <div class="kpi-grid kpi-4" id="kpiGrid"></div>
 
-      <!-- 최근 6개월 흐름 -->
+      <!-- 추세 -->
       <div class="panel">
-        <h3>최근 6개월 흐름</h3>
+        <h3 id="trendTitle">최근 6개월 추세</h3>
         <div id="trendChart" class="trend-chart"></div>
         <div class="legend">
-          <span><i class="dot income"></i>수입</span>
-          <span><i class="dot expense"></i>지출</span>
+          <span><i class="dot income"></i><span id="legendIncome">매출</span></span>
+          <span><i class="dot expense"></i><span id="legendExpense">비용</span></span>
         </div>
       </div>
 
-      <!-- 카테고리별 (세금 참고용) -->
+      <!-- 카테고리 분석 -->
       <div class="panel">
-        <h3>사업 비용 카테고리 <small class="muted">(세금 신고 참고)</small></h3>
+        <h3 id="catTitle">비용 카테고리 <small class="muted">(많이 쓴 순)</small></h3>
         <div id="categoryBreakdown" class="cat-list"></div>
+      </div>
+
+      <!-- 일별 달력 -->
+      <div class="panel">
+        <h3 id="calTitle">일별 달력</h3>
+        <div class="cal-weekdays">
+          <span class="sun">일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span class="sat">토</span>
+        </div>
+        <div id="calendarGrid" class="cal-grid"></div>
+        <div id="dayDetail" class="day-detail"></div>
       </div>
     </section>
 
@@ -89,7 +91,6 @@
       </div>
 
       <form id="txForm" class="tx-form" novalidate>
-        <!-- 구분: 개인 / 사업 -->
         <div class="field">
           <label>구분</label>
           <div class="seg" role="radiogroup">
@@ -98,7 +99,6 @@
           </div>
         </div>
 
-        <!-- 유형: 수입 / 지출 -->
         <div class="field">
           <label>유형</label>
           <div class="seg" role="radiogroup">
@@ -149,6 +149,19 @@
       <div id="txList" class="tx-list"></div>
     </section>
   </main>
+
+  <!-- ===== 연/월 선택 바텀시트 ===== -->
+  <div id="pickerOverlay" class="picker-overlay" hidden>
+    <div class="picker-sheet">
+      <div class="picker-grab"></div>
+      <div class="picker-year">
+        <button id="pickerPrevYear" aria-label="이전 해">‹</button>
+        <strong id="pickerYearLabel">2026</strong>
+        <button id="pickerNextYear" aria-label="다음 해">›</button>
+      </div>
+      <div class="picker-months" id="pickerMonths"></div>
+    </div>
+  </div>
 
   <!-- ===== 하단 탭 내비게이션 (모바일 친화) ===== -->
   <nav class="tabbar">

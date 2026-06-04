@@ -255,3 +255,110 @@ body {
   .kpi-grid { grid-template-columns: repeat(3, 1fr); }
   .kpi-card.total { grid-column: auto; }
 }
+
+/* ============================================
+   추가 컴포넌트 (대시보드 토글 · 달력 · 연월 선택)
+   ============================================ */
+
+/* 상단 연/월 라벨 버튼 */
+.month-label {
+  border: none; background: transparent; cursor: pointer;
+  font-family: inherit; color: var(--ink);
+  font-variant-numeric: tabular-nums; font-weight: 700; font-size: 14px;
+  min-width: 62px; text-align: center; padding: 2px 6px; border-radius: 8px;
+}
+.month-label:active { background: var(--primary-soft); }
+
+/* 대시보드 사업/개인 토글 */
+.dash-toggle { margin: 4px 0 6px; }
+.dash-toggle .seg-btn { font-size: 15px; padding: 12px; }
+
+/* KPI 4칸 (모바일 2x2) */
+.kpi-grid.kpi-4 { grid-template-columns: repeat(2, 1fr); }
+.kpi-card.income  .kpi-value { color: var(--income); }
+.kpi-card.expense .kpi-value { color: var(--expense); }
+.kpi-card.highlight { background: var(--ink); }
+.kpi-card.highlight .kpi-label,
+.kpi-card.highlight .kpi-sub { color: rgba(255,255,255,.6); }
+.kpi-card.highlight .kpi-value { color: #fff; }
+.kpi-card .kpi-sub { display: block; margin-top: 3px; }
+
+/* ---------- 달력 ---------- */
+.cal-weekdays {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  text-align: center; font-size: 12px; font-weight: 600; color: var(--muted);
+  margin-bottom: 6px;
+}
+.cal-weekdays .sun { color: var(--expense); }
+.cal-weekdays .sat { color: var(--primary); }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.cal-cell {
+  aspect-ratio: 1 / 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  gap: 3px; padding-top: 6px;
+  border: none; background: transparent; cursor: pointer;
+  border-radius: 10px; font-family: inherit;
+}
+.cal-cell.empty-cell { cursor: default; }
+.cal-day { font-size: 13px; font-weight: 600; color: var(--ink); line-height: 1; }
+.cal-cell.sun .cal-day { color: var(--expense); }
+.cal-cell.sat .cal-day { color: var(--primary); }
+.cal-cell.today { background: var(--primary-soft); }
+.cal-cell.today .cal-day { color: var(--primary); font-weight: 800; }
+.cal-cell.selected { background: var(--ink); }
+.cal-cell.selected .cal-day { color: #fff; }
+.cal-cell:not(.empty-cell):not(.selected):active { background: var(--bg); }
+.cal-dots { display: flex; gap: 3px; height: 6px; align-items: center; }
+.cal-dots .cd { width: 5px; height: 5px; border-radius: 50%; display: block; }
+.cal-dots .cd.income { background: var(--income); }
+.cal-dots .cd.expense { background: var(--expense); }
+.cal-cell.selected .cal-dots .cd { box-shadow: 0 0 0 1px rgba(255,255,255,.5); }
+
+/* 선택한 날짜 상세 */
+.day-detail { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 14px; }
+.day-detail-head { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+.day-hint { font-size: 13px; color: var(--muted); text-align: center; padding: 8px 0; font-weight: 500; }
+.day-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 9px 2px;
+}
+.day-row + .day-row { border-top: 1px solid var(--line); }
+.day-cat { font-size: 14px; font-weight: 500; min-width: 0; }
+
+/* ---------- 연/월 선택 바텀시트 ---------- */
+.picker-overlay[hidden] { display: none; }
+.picker-overlay {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(0,0,0,.4);
+  display: flex; align-items: flex-end; justify-content: center;
+  animation: fade .2s ease;
+}
+.picker-sheet {
+  background: var(--surface); width: 100%; max-width: 460px;
+  border-radius: 24px 24px 0 0; padding: 12px 20px calc(28px + env(safe-area-inset-bottom));
+  animation: sheetUp .28s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes sheetUp { from { transform: translateY(100%); } to { transform: none; } }
+.picker-grab { width: 40px; height: 4px; border-radius: 999px; background: var(--line); margin: 4px auto 18px; }
+.picker-year {
+  display: flex; align-items: center; justify-content: center; gap: 24px; margin-bottom: 18px;
+}
+.picker-year strong { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.picker-year button {
+  width: 38px; height: 38px; border-radius: 50%; border: none; cursor: pointer;
+  background: var(--bg); color: var(--ink); font-size: 22px; font-weight: 600;
+}
+.picker-year button:active { background: var(--primary-soft); }
+.picker-months { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.picker-months .pm {
+  font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+  padding: 15px 0; border-radius: 14px; border: none;
+  background: var(--bg); color: var(--ink-2);
+}
+.picker-months .pm.active { background: var(--primary); color: #fff; }
+.picker-months .pm:active { transform: scale(.97); }
+
+/* PC 조정: KPI 4칸 가로 정렬 */
+@media (min-width: 700px) {
+  .kpi-grid.kpi-4 { grid-template-columns: repeat(4, 1fr); }
+}
