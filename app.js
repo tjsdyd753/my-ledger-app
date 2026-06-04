@@ -102,19 +102,23 @@
     return dKey(y, m, d);
   }
   function generateRecurring() {
-    var today = todayStr(), changed = false;
+    var today = todayStr(), touched = false;
     state.recurring.forEach(function (r) {
       var guard = 0;
       while (r.nextDate <= today && guard < 600) {
-        state.transactions.push({
-          id: uid(), date: r.nextDate, scope: r.scope, type: r.type,
-          category: r.category, amount: r.amount, memo: r.memo, recurringId: r.id
-        });
+        // 같은 정기거래의 같은 날짜 거래가 이미 있으면 건너뜀 (중복 방지)
+        var exists = state.transactions.some(function (t) { return t.recurringId === r.id && t.date === r.nextDate; });
+        if (!exists) {
+          state.transactions.push({
+            id: uid(), date: r.nextDate, scope: r.scope, type: r.type,
+            category: r.category, amount: r.amount, memo: r.memo, recurringId: r.id
+          });
+        }
         r.nextDate = advance(r.nextDate, r.interval);
-        changed = true; guard++;
+        touched = true; guard++;
       }
     });
-    if (changed) { save(TX_KEY, state.transactions); save(REC_KEY, state.recurring); }
+    if (touched) { save(TX_KEY, state.transactions); save(REC_KEY, state.recurring); }
   }
 
   /* ================= 대시보드 ================= */
@@ -286,8 +290,16 @@
         save(TX_KEY, state.transactions);
         msg.textContent = "✓ 저장되었습니다.";
       } else {
-        var rule = Object.assign({ id: uid(), interval: state.form.repeat, startDate: date, nextDate: date }, base);
-        state.recurring.push(rule); save(REC_KEY, state.recurring);
+        // 이중 클릭 등으로 동일한 정기거래가 두 번 등록되는 것을 방지
+        var dup = state.recurring.some(function (x) {
+          return x.scope === base.scope && x.type === base.type && x.category === base.category &&
+                 x.amount === base.amount && x.memo === base.memo &&
+                 x.interval === state.form.repeat && x.startDate === date;
+        });
+        if (!dup) {
+          var rule = Object.assign({ id: uid(), interval: state.form.repeat, startDate: date, nextDate: date }, base);
+          state.recurring.push(rule); save(REC_KEY, state.recurring);
+        }
         generateRecurring();
         msg.textContent = "✓ 정기 거래로 등록했습니다 (" + (state.form.repeat === "monthly" ? "매월" : "매년") + ").";
       }
