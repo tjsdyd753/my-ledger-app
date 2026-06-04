@@ -554,11 +554,56 @@
     $("menuBtn").addEventListener("click", function () { state.menuOpen = true; $("menuOverlay").hidden = false; updateFab(); });
     $("menuOverlay").addEventListener("click", function (e) { if (e.target === $("menuOverlay")) { state.menuOpen = false; $("menuOverlay").hidden = true; updateFab(); } });
     document.querySelectorAll(".menu-item").forEach(function (item) {
+      if (item.id === "logoutBtn") return; // 로그아웃은 별도 처리(setupAuth)
       item.addEventListener("click", function () {
         state.menuOpen = false; $("menuOverlay").hidden = true;
         if (item.dataset.view === "add") { openInput(); }
         else { switchView(item.dataset.view); }
       });
+    });
+  }
+
+  /* ================= Firebase 로그인 ================= */
+  var firebaseConfig = {
+    apiKey: "AIzaSyDPyTmu6FX6lx_QqL_yL4dGUfMDhjTLwQg",
+    authDomain: "hansohn-app.firebaseapp.com",
+    projectId: "hansohn-app",
+    storageBucket: "hansohn-app.firebasestorage.app",
+    messagingSenderId: "998852560556",
+    appId: "1:998852560556:web:0da3e041651879321bc109",
+    measurementId: "G-PZ8YJGR281"
+  };
+  var auth = null;
+
+  function showLogin() { $("loginScreen").hidden = false; }
+  function hideLogin() { $("loginScreen").hidden = true; }
+  function renderMenuUser(user) {
+    if (!user) { $("menuUser").innerHTML = ""; return; }
+    var name = user.displayName || "사용자", email = user.email || "";
+    var avatar = user.photoURL
+      ? '<img src="' + user.photoURL + '" alt="프로필"/>'
+      : '<span class="menu-avatar-fb">' + esc(name.slice(0, 1)) + '</span>';
+    $("menuUser").innerHTML =
+      '<div class="menu-avatar">' + avatar + '</div>' +
+      '<div class="menu-user-info"><strong>' + esc(name) + '</strong><span>' + esc(email) + '</span></div>';
+  }
+  function setupAuth() {
+    // Firebase가 로드되지 않은 경우(오프라인 등)에는 로그인 없이 앱을 사용
+    if (typeof firebase === "undefined") { hideLogin(); return; }
+    firebase.initializeApp(firebaseConfig);
+    auth = firebase.auth();
+
+    $("googleLoginBtn").addEventListener("click", function () {
+      auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
+        .catch(function (e) { alert("로그인에 실패했습니다.\n" + (e && e.message ? e.message : "")); });
+    });
+    $("logoutBtn").addEventListener("click", function () {
+      state.menuOpen = false; $("menuOverlay").hidden = true; updateFab();
+      auth.signOut();
+    });
+    auth.onAuthStateChanged(function (user) {
+      if (user) { renderMenuUser(user); hideLogin(); }
+      else { renderMenuUser(null); showLogin(); }
     });
   }
 
@@ -582,6 +627,7 @@
     $("prevMonth").addEventListener("click", function () { changeMonth(-1); });
     $("nextMonth").addEventListener("click", function () { changeMonth(1); });
     setupForm(); setupListControls(); setupDashToggle(); setupPicker(); setupMenu(); setupAssets();
+    setupAuth();
     $("fab").addEventListener("click", function () { openInput(); });
     $("inputClose").addEventListener("click", function () { closeInput(); });
     $("inputOverlay").addEventListener("click", function (e) { if (e.target === $("inputOverlay")) closeInput(); });
