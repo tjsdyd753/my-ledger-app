@@ -294,7 +294,7 @@
     var url = URL.createObjectURL(blob);
     var a = document.createElement("a");
     a.href = url;
-    a.download = "결_" + ymKey(state.month) + ".csv";
+    a.download = "한손_" + ymKey(state.month) + ".csv";
     a.click();
     URL.revokeObjectURL(url);
   }
