@@ -1,0 +1,263 @@
+/* ============================================
+   결 Ledger · 스타일시트
+   따뜻한 크림 배경 + 포레스트 그린(신뢰) + 골드 포인트
+   ============================================ */
+
+:root {
+  --bg:        #F4F0E6;
+  --surface:   #FCFAF4;
+  --surface-2: #FFFFFF;
+  --ink:       #1E2B23;
+  --muted:     #6E7569;
+  --line:      #E3DCCB;
+  --primary:   #1B4332;  /* 사업/포레스트 */
+  --primary-2: #2D6A4F;
+  --gold:      #B58A26;  /* 포인트 */
+  --income:    #2D6A4F;  /* 수입(+) */
+  --expense:   #A63A4A;  /* 지출(-) */
+  --personal:  #7A5BA6;  /* 개인 */
+  --radius:    16px;
+  --shadow:    0 1px 2px rgba(30,43,35,.04), 0 12px 28px -18px rgba(30,43,35,.35);
+  --font-body: "IBM Plex Sans KR", -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-head: "Gowun Batang", "Nanum Myeongjo", serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-body);
+  background:
+    radial-gradient(1200px 600px at 110% -10%, rgba(181,138,38,.10), transparent 60%),
+    var(--bg);
+  color: var(--ink);
+  font-weight: 400;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: 84px; /* 하단 탭바 공간 */
+}
+
+/* ---------- 상단 헤더 ---------- */
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px;
+  background: rgba(252,250,244,.82);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.brand { display: flex; align-items: center; gap: 11px; }
+.brand-mark {
+  width: 40px; height: 40px; flex: none;
+  display: grid; place-items: center;
+  font-family: var(--font-head); font-size: 22px; font-weight: 700;
+  color: #fff; background: var(--primary);
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+}
+.brand-text { display: flex; flex-direction: column; line-height: 1.15; }
+.brand-text strong { font-size: 16px; letter-spacing: -.01em; }
+.brand-text span { font-size: 11.5px; color: var(--muted); }
+
+.month-picker {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px; padding: 4px 6px;
+}
+.month-picker button {
+  border: none; background: transparent; cursor: pointer;
+  font-size: 20px; line-height: 1; color: var(--primary);
+  width: 28px; height: 28px; border-radius: 50%;
+}
+.month-picker button:active { background: var(--line); }
+#currentMonth { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 62px; text-align: center; }
+
+/* ---------- 레이아웃 ---------- */
+.container { max-width: 760px; margin: 0 auto; padding: 20px 16px 40px; }
+.view { display: none; animation: fade .35s ease; }
+.view.active { display: block; }
+@keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+.section-head { margin-bottom: 18px; }
+.section-head h2 { font-family: var(--font-head); font-size: 26px; font-weight: 700; letter-spacing: -.02em; }
+.section-head .muted { font-size: 13.5px; margin-top: 2px; }
+.muted { color: var(--muted); }
+
+/* ---------- KPI 카드 ---------- */
+.kpi-grid {
+  display: grid; gap: 12px;
+  grid-template-columns: repeat(2, 1fr);
+  margin-bottom: 18px;
+}
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px 16px 14px;
+  box-shadow: var(--shadow);
+  position: relative; overflow: hidden;
+}
+.kpi-card::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  background: var(--primary);
+}
+.kpi-card.personal::before { background: var(--personal); }
+.kpi-card.total { grid-column: 1 / -1; }
+.kpi-card.total::before { background: var(--gold); }
+.kpi-label { font-size: 12.5px; color: var(--muted); font-weight: 500; }
+.kpi-value {
+  display: block; margin: 6px 0 4px;
+  font-size: 25px; font-weight: 700; letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+}
+.kpi-sub { font-size: 12px; color: var(--muted); }
+.kpi-sub em { font-style: normal; }
+
+/* ---------- 패널 ---------- */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px 18px 20px;
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+}
+.panel h3 { font-size: 15px; font-weight: 600; margin-bottom: 14px; }
+.panel h3 small { font-weight: 400; }
+
+/* 추세 차트 (CSS 막대) */
+.trend-chart {
+  display: flex; align-items: flex-end; gap: 10px;
+  height: 150px; padding-top: 8px;
+}
+.trend-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; }
+.trend-bars { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; gap: 4px; }
+.trend-bars i {
+  display: block; width: 12px; border-radius: 4px 4px 0 0;
+  min-height: 2px; transition: height .5s ease;
+}
+.trend-bars i.income { background: var(--income); }
+.trend-bars i.expense { background: var(--expense); opacity: .85; }
+.trend-label { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.legend { display: flex; gap: 16px; margin-top: 12px; font-size: 12px; color: var(--muted); }
+.legend .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+.dot.income { background: var(--income); }
+.dot.expense { background: var(--expense); }
+
+/* 카테고리 분해 */
+.cat-list { display: flex; flex-direction: column; gap: 11px; }
+.cat-row { display: grid; grid-template-columns: 88px 1fr auto; align-items: center; gap: 10px; }
+.cat-name { font-size: 13px; }
+.cat-bar { height: 8px; background: var(--line); border-radius: 999px; overflow: hidden; }
+.cat-bar > span { display: block; height: 100%; background: linear-gradient(90deg, var(--primary-2), var(--gold)); border-radius: 999px; }
+.cat-amt { font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--muted); }
+.empty { color: var(--muted); font-size: 13px; text-align: center; padding: 18px 0; }
+
+/* ---------- 입력 폼 ---------- */
+.tx-form {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow);
+  display: flex; flex-direction: column; gap: 16px;
+}
+.field { display: flex; flex-direction: column; gap: 7px; }
+.field > label { font-size: 13px; font-weight: 600; }
+.field input, .field select {
+  font-family: inherit; font-size: 15px; color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--line); border-radius: 10px;
+  padding: 12px 13px; width: 100%;
+}
+.field input:focus, .field select:focus {
+  outline: none; border-color: var(--primary-2);
+  box-shadow: 0 0 0 3px rgba(45,106,79,.14);
+}
+#txAmount { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.seg { display: flex; gap: 8px; }
+.seg-btn {
+  flex: 1; font-family: inherit; font-size: 14px; cursor: pointer;
+  padding: 11px 8px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--surface-2); color: var(--muted);
+  transition: all .15s ease;
+}
+.seg-btn.active {
+  background: var(--primary); color: #fff; border-color: var(--primary);
+  font-weight: 600;
+}
+.type-btn.active { background: var(--gold); border-color: var(--gold); }
+
+.btn-primary {
+  font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  color: #fff; background: var(--primary);
+  border: none; border-radius: 12px; padding: 15px;
+  transition: transform .1s ease, background .2s ease;
+}
+.btn-primary:hover { background: var(--primary-2); }
+.btn-primary:active { transform: scale(.985); }
+.form-msg { font-size: 13px; min-height: 18px; text-align: center; }
+.form-msg.ok { color: var(--income); }
+.form-msg.err { color: var(--expense); }
+
+/* ---------- 내역 리스트 ---------- */
+.filter-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.chip {
+  font-family: inherit; font-size: 13px; cursor: pointer;
+  padding: 8px 14px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--surface-2); color: var(--muted);
+}
+.chip.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+.chip.export { margin-left: auto; color: var(--primary); border-color: var(--primary); }
+
+.tx-list { display: flex; flex-direction: column; gap: 9px; }
+.tx-item {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 13px; padding: 13px 14px; box-shadow: var(--shadow);
+}
+.tx-badge {
+  flex: none; width: 38px; height: 38px; border-radius: 10px;
+  display: grid; place-items: center; font-size: 17px;
+  background: rgba(27,67,50,.08);
+}
+.tx-item.personal .tx-badge { background: rgba(122,91,166,.12); }
+.tx-main { flex: 1; min-width: 0; }
+.tx-cat { font-size: 14.5px; font-weight: 500; }
+.tx-meta { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.tx-meta .scope-tag { font-weight: 600; }
+.tx-amt { font-size: 15.5px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tx-amt.income { color: var(--income); }
+.tx-amt.expense { color: var(--expense); }
+.tx-del {
+  flex: none; border: none; background: transparent; cursor: pointer;
+  color: var(--muted); font-size: 18px; padding: 4px 2px; opacity: .6;
+}
+.tx-del:hover { opacity: 1; color: var(--expense); }
+
+/* ---------- 하단 탭바 ---------- */
+.tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  display: flex; justify-content: space-around;
+  background: rgba(252,250,244,.92);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--line);
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+}
+.tab {
+  flex: 1; max-width: 120px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  border: none; background: transparent; cursor: pointer;
+  font-family: inherit; font-size: 11px; color: var(--muted); font-weight: 500;
+  padding: 4px;
+}
+.tab span { font-size: 19px; line-height: 1; filter: grayscale(.4); transition: filter .2s; }
+.tab.active { color: var(--primary); }
+.tab.active span { filter: none; }
+
+/* ---------- PC 화면(태블릿 이상)에서의 조정 ---------- */
+@media (min-width: 700px) {
+  .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+  .kpi-card.total { grid-column: auto; }
+}
+
+/* PC에서는 하단 탭바 대신 상단 가로 메뉴가 더 자연스럽지만,
+   초보자 코드 이해를 돕기 위해 하단 탭바를 공통 유지합니다. */
