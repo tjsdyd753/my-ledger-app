@@ -2,61 +2,43 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <!-- 📱 모바일 반응형의 핵심: 이 한 줄이 스마트폰에서 화면 깨짐을 막아줍니다 -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
   <meta name="description" content="개인과 사업의 돈 흐름을 한 곳에서 관리하는 가벼운 자산관리 ERP" />
   <meta name="theme-color" content="#3182F6" />
-
-  <!-- 앱 아이콘 (브라우저 탭/즐겨찾기) -->
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <title>한손 · 개인과 사업을 한 흐름으로</title>
-
-  <!-- 웹 폰트: Pretendard (깔끔한 산세리프 / 인터넷 연결 시 적용) -->
   <link rel="stylesheet" as="style" crossorigin
     href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" />
-
-  <!-- 스타일시트 연결 (index.html과 같은 폴더에 style.css가 있어야 합니다) -->
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- ===== 상단 헤더 ===== -->
+  <!-- ===== 상단 헤더 (왼쪽 로고 · 가운데 날짜 · 오른쪽 메뉴) ===== -->
   <header class="topbar">
     <div class="brand">
       <span class="brand-mark">한</span>
-      <div class="brand-text">
-        <strong>한손</strong>
-        <span>개인과 사업을 한 흐름으로</span>
-      </div>
+      <strong class="brand-name">한손</strong>
     </div>
     <div class="month-picker">
       <button id="prevMonth" aria-label="이전 달">‹</button>
-      <!-- 이 글자를 누르면 연/월 선택창이 뜹니다 -->
       <button id="currentMonth" class="month-label" aria-label="연·월 선택">2026.06</button>
       <button id="nextMonth" aria-label="다음 달">›</button>
     </div>
+    <button id="menuBtn" class="menu-btn" aria-label="메뉴">☰</button>
   </header>
 
-  <!-- ===== 본문 ===== -->
   <main class="container">
 
-    <!-- ─── 1) 대시보드 ─── -->
+    <!-- ─── 대시보드 ─── -->
     <section id="view-dashboard" class="view active">
-
-      <!-- 사업 / 개인 전환 토글 -->
       <div class="dash-toggle seg" id="dashToggle">
         <button class="seg-btn active" data-dscope="business">💼 사업</button>
         <button class="seg-btn" data-dscope="personal">🏠 개인</button>
       </div>
-
       <div class="section-head">
         <h2 id="dashTitle">사업 대시보드</h2>
         <p class="muted"><span id="dashMonthLabel">6월</span> 기준 분석</p>
       </div>
-
-      <!-- 핵심 지표 (JS가 4개 카드를 채웁니다) -->
       <div class="kpi-grid kpi-4" id="kpiGrid"></div>
-
-      <!-- 추세 -->
       <div class="panel">
         <h3 id="trendTitle">최근 6개월 추세</h3>
         <div id="trendChart" class="trend-chart"></div>
@@ -65,14 +47,10 @@
           <span><i class="dot expense"></i><span id="legendExpense">비용</span></span>
         </div>
       </div>
-
-      <!-- 카테고리 분석 -->
       <div class="panel">
         <h3 id="catTitle">비용 카테고리 <small class="muted">(많이 쓴 순)</small></h3>
         <div id="categoryBreakdown" class="cat-list"></div>
       </div>
-
-      <!-- 일별 달력 -->
       <div class="panel">
         <h3 id="calTitle">일별 달력</h3>
         <div class="cal-weekdays">
@@ -83,13 +61,12 @@
       </div>
     </section>
 
-    <!-- ─── 2) 입력 ─── -->
+    <!-- ─── 입력 ─── -->
     <section id="view-add" class="view">
       <div class="section-head">
         <h2>거래 입력</h2>
         <p class="muted">개인/사업을 구분해 간편하게 기록하세요.</p>
       </div>
-
       <form id="txForm" class="tx-form" novalidate>
         <div class="field">
           <label>구분</label>
@@ -98,7 +75,6 @@
             <button type="button" class="seg-btn" data-scope="personal">🏠 개인</button>
           </div>
         </div>
-
         <div class="field">
           <label>유형</label>
           <div class="seg" role="radiogroup">
@@ -106,47 +82,106 @@
             <button type="button" class="seg-btn type-btn" data-type="income">수입 / 매출</button>
           </div>
         </div>
-
         <div class="field">
           <label for="txAmount">금액 (원)</label>
           <input type="text" id="txAmount" inputmode="numeric" placeholder="0" autocomplete="off" />
         </div>
-
         <div class="field">
           <label for="txCategory">카테고리</label>
           <select id="txCategory"></select>
+          <!-- 카테고리 추가/삭제 -->
+          <button type="button" id="catEditToggle" class="cat-edit-toggle">＋ 카테고리 추가·삭제</button>
+          <div id="catEditor" class="cat-editor" hidden>
+            <div id="catPills" class="cat-pills"></div>
+            <div class="cat-add">
+              <input type="text" id="catAddInput" placeholder="새 카테고리 이름" autocomplete="off" />
+              <button type="button" id="catAddBtn" class="cat-add-btn">＋ 추가</button>
+            </div>
+          </div>
         </div>
-
         <div class="field">
           <label for="txDate">날짜</label>
           <input type="date" id="txDate" />
         </div>
-
+        <div class="field">
+          <label>반복 <small class="muted">(정기 구독·임대료 등 자동 등록)</small></label>
+          <div class="seg" role="radiogroup">
+            <button type="button" class="seg-btn rep-btn active" data-repeat="once">한 번</button>
+            <button type="button" class="seg-btn rep-btn" data-repeat="monthly">🔁 매월</button>
+            <button type="button" class="seg-btn rep-btn" data-repeat="yearly">🔁 매년</button>
+          </div>
+        </div>
         <div class="field">
           <label for="txMemo">메모 <small class="muted">(선택)</small></label>
           <input type="text" id="txMemo" placeholder="예: 6월 클라이언트 A 용역비" autocomplete="off" />
         </div>
-
         <button type="submit" class="btn-primary">기록 저장</button>
         <p id="formMsg" class="form-msg" aria-live="polite"></p>
       </form>
     </section>
 
-    <!-- ─── 3) 내역 ─── -->
+    <!-- ─── 내역 ─── -->
     <section id="view-list" class="view">
       <div class="section-head">
         <h2>거래 내역</h2>
         <p class="muted">이번 달에 기록한 모든 거래입니다.</p>
       </div>
-
       <div class="filter-bar">
         <button class="chip active" data-filter="all">전체</button>
         <button class="chip" data-filter="business">사업</button>
         <button class="chip" data-filter="personal">개인</button>
         <button id="exportBtn" class="chip export">⤓ CSV 내보내기</button>
       </div>
-
       <div id="txList" class="tx-list"></div>
+    </section>
+
+    <!-- ─── 자산 관리 (메뉴에서 진입) ─── -->
+    <section id="view-assets" class="view">
+      <div class="section-head">
+        <h2>자산 관리</h2>
+        <p class="muted">내가 가진 자산과 부채를 한눈에.</p>
+      </div>
+      <div class="kpi-grid" id="assetKpi"></div>
+      <div class="panel">
+        <h3>카테고리별 자산</h3>
+        <div id="assetBreakdown" class="cat-list"></div>
+      </div>
+      <div class="panel">
+        <h3>자산 추가</h3>
+        <div class="asset-form">
+          <div class="seg" id="assetKindSeg">
+            <button type="button" class="seg-btn active" data-kind="asset">자산</button>
+            <button type="button" class="seg-btn" data-kind="liability">부채</button>
+          </div>
+          <input type="text" id="assetName" placeholder="이름 (예: 주거래 통장)" autocomplete="off" />
+          <select id="assetCategory"></select>
+          <button type="button" id="assetCatEditToggle" class="cat-edit-toggle">＋ 카테고리 추가·삭제</button>
+          <div id="assetCatEditor" class="cat-editor" hidden>
+            <div id="assetCatPills" class="cat-pills"></div>
+            <div class="cat-add">
+              <input type="text" id="assetCatAddInput" placeholder="새 카테고리 이름" autocomplete="off" />
+              <button type="button" id="assetCatAddBtn" class="cat-add-btn">＋ 추가</button>
+            </div>
+          </div>
+          <input type="text" id="assetBalance" inputmode="numeric" placeholder="금액 (원)" autocomplete="off" />
+          <button type="button" id="assetAddBtn" class="btn-primary">자산 추가</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>자산 목록</h3>
+        <div id="assetList" class="tx-list"></div>
+      </div>
+    </section>
+
+    <!-- ─── 정기 거래 관리 (메뉴에서 진입) ─── -->
+    <section id="view-recurring" class="view">
+      <div class="section-head">
+        <h2>정기 거래 관리</h2>
+        <p class="muted">매월·매년 자동 등록되는 거래 목록입니다.</p>
+      </div>
+      <div class="panel">
+        <div id="recurringList" class="tx-list"></div>
+      </div>
     </section>
   </main>
 
@@ -163,14 +198,22 @@
     </div>
   </div>
 
-  <!-- ===== 하단 탭 내비게이션 (모바일 친화) ===== -->
-  <nav class="tabbar">
-    <button class="tab active" data-view="dashboard"><span>📊</span>대시보드</button>
-    <button class="tab" data-view="add"><span>➕</span>입력</button>
-    <button class="tab" data-view="list"><span>📑</span>내역</button>
-  </nav>
+  <!-- ===== 메뉴 드로어 ===== -->
+  <div id="menuOverlay" class="menu-overlay" hidden>
+    <div class="menu-drawer">
+      <div class="menu-title">전체 메뉴</div>
+      <button class="menu-item" data-view="dashboard"><span>📊</span> 대시보드</button>
+      <button class="menu-item" data-view="add"><span>➕</span> 거래 입력</button>
+      <button class="menu-item" data-view="list"><span>📑</span> 거래 내역</button>
+      <div class="menu-divider"></div>
+      <button class="menu-item" data-view="assets"><span>💰</span> 자산 관리</button>
+      <button class="menu-item" data-view="recurring"><span>🔁</span> 정기 거래 관리</button>
+    </div>
+  </div>
 
-  <!-- 스크립트 연결 (index.html과 같은 폴더에 app.js가 있어야 합니다) -->
+  <!-- ===== 우하단 거래 입력 버튼 ===== -->
+  <button id="fab" class="fab" aria-label="거래 입력">＋</button>
+
   <script src="app.js" defer></script>
 </body>
 </html>
