@@ -588,8 +588,8 @@
       '<div class="menu-user-info"><strong>' + esc(name) + '</strong><span>' + esc(email) + '</span></div>';
   }
   function setupAuth() {
-    // Firebase가 로드되지 않은 경우(오프라인 등)에는 로그인 없이 앱을 사용
-    if (typeof firebase === "undefined") { hideLogin(); return; }
+    // 로컬 파일(file://)로 열었거나 Firebase 미로딩 시 → 로그인 없이 미리보기 모드
+    if (typeof firebase === "undefined" || location.protocol === "file:") { hideLogin(); return; }
     firebase.initializeApp(firebaseConfig);
     auth = firebase.auth();
 
