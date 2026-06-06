@@ -58,6 +58,8 @@
     selectedDay: null,
     schedSelectedDay: null,
     schedColor: SCHEDULE_COLORS[0],
+    schedScope: "business",
+    schedFilter: "all",
     pickerYear: null,
     assetKind: "asset",
     currentView: "dashboard",
@@ -239,12 +241,15 @@
   function renderCalendar(scope) {
     var grid = $("calendarGrid"), y = state.month.getFullYear(), m = state.month.getMonth();
     var firstWeekday = new Date(y, m, 1).getDay(), daysInMonth = new Date(y, m + 1, 0).getDate();
-    var byDay = {};
+    var byDay = {}, schedDay = {};
     state.transactions.forEach(function (t) {
       if (t.scope === scope && inMonth(t, state.month)) {
         var day = +t.date.slice(8, 10); if (!byDay[day]) byDay[day] = { inc: 0, exp: 0 };
         if (t.type === "income") byDay[day].inc += t.amount; else byDay[day].exp += t.amount;
       }
+    });
+    state.schedules.forEach(function (s) {
+      if ((s.scope || "business") === scope && s.date.slice(0, 7) === ymKey(state.month)) schedDay[+s.date.slice(8, 10)] = true;
     });
     var today = new Date(), isThisMonth = today.getFullYear() === y && today.getMonth() === m, html = "";
     for (var b = 0; b < firstWeekday; b++) html += '<span class="cal-cell empty-cell"></span>';
@@ -253,7 +258,9 @@
       if (wd === 0) cls += " sun"; if (wd === 6) cls += " sat";
       if (isThisMonth && today.getDate() === day) cls += " today";
       if (state.selectedDay === key) cls += " selected";
-      var dots = ""; if (info) { if (info.inc > 0) dots += '<i class="cd income"></i>'; if (info.exp > 0) dots += '<i class="cd expense"></i>'; }
+      var dots = "";
+      if (info) { if (info.inc > 0) dots += '<i class="cd income"></i>'; if (info.exp > 0) dots += '<i class="cd expense"></i>'; }
+      if (schedDay[day]) dots += '<i class="cd sched"></i>';
       html += '<button class="' + cls + '" data-date="' + key + '"><span class="cal-day">' + day + '</span><span class="cal-dots">' + dots + '</span></button>';
     }
     grid.innerHTML = html;
@@ -266,16 +273,39 @@
   }
   function renderDayDetail(scope) {
     var box = $("dayDetail");
-    if (!state.selectedDay) { box.innerHTML = '<p class="day-hint">날짜를 누르면 그 날의 거래를 볼 수 있어요.</p>'; return; }
-    var list = state.transactions.filter(function (t) { return t.scope === scope && t.date === state.selectedDay; }).sort(function (a, b) { return b.id.localeCompare(a.id); });
-    var head = '<div class="day-detail-head">' + state.selectedDay.slice(5).replace("-", "월 ") + "일</div>";
-    if (!list.length) { box.innerHTML = head + '<p class="day-hint">이 날은 기록된 거래가 없어요.</p>'; return; }
-    box.innerHTML = head + list.map(function (t) {
-      var sign = t.type === "income" ? "+" : "-";
-      var ph = photosOf(t.id);
-      var photo = ph.length ? '<button class="photo-btn" data-photo="' + t.id + '" aria-label="사진 보기">📷</button>' : '';
-      return '<div class="day-row"><span class="day-cat">' + esc(t.category) + (t.memo ? ' · ' + esc(t.memo) : '') + '</span>' + photo + '<span class="tx-amt ' + t.type + '">' + sign + won(t.amount) + '</span><button class="tx-del" data-id="' + t.id + '" aria-label="삭제">×</button></div>';
-    }).join("");
+    if (!state.selectedDay) { box.innerHTML = '<p class="day-hint">날짜를 누르면 그 날의 거래와 일정을 볼 수 있어요.</p>'; return; }
+    var dayLabel = state.selectedDay.slice(5).replace("-", "월 ") + "일";
+    var txList = state.transactions.filter(function (t) { return t.scope === scope && t.date === state.selectedDay; }).sort(function (a, b) { return b.id.localeCompare(a.id); });
+    var schedList = state.schedules.filter(function (s) { return (s.scope || "business") === scope && s.date === state.selectedDay; })
+      .sort(function (a, b) { return (a.time || "99").localeCompare(b.time || "99"); });
+
+    var html = '<div class="day-detail-head">' + dayLabel + '</div>';
+
+    // 거래
+    html += '<div class="day-sub">거래</div>';
+    if (!txList.length) {
+      html += '<p class="day-hint">기록된 거래가 없어요.</p>';
+    } else {
+      html += txList.map(function (t) {
+        var sign = t.type === "income" ? "+" : "-";
+        var ph = photosOf(t.id);
+        var photo = ph.length ? '<button class="photo-btn" data-photo="' + t.id + '" aria-label="사진 보기">📷</button>' : '';
+        return '<div class="day-row"><span class="day-cat">' + esc(t.category) + (t.memo ? ' · ' + esc(t.memo) : '') + '</span>' + photo + '<span class="tx-amt ' + t.type + '">' + sign + won(t.amount) + '</span><button class="tx-del" data-id="' + t.id + '" aria-label="삭제">×</button></div>';
+      }).join("");
+    }
+
+    // 일정
+    html += '<div class="day-sub">일정</div>';
+    if (!schedList.length) {
+      html += '<p class="day-hint">등록된 일정이 없어요.</p>';
+    } else {
+      html += schedList.map(function (s) {
+        return '<div class="day-row"><span class="sched-bar" style="background:' + s.color + '"></span><span class="day-cat">' + (s.time ? '<b>' + s.time + '</b> ' : '') + esc(s.title) + (s.memo ? ' · ' + esc(s.memo) : '') + '</span></div>';
+      }).join("");
+    }
+
+    box.innerHTML = html;
+
     box.querySelectorAll(".photo-btn").forEach(function (btn) {
       btn.addEventListener("click", function () {
         var tx = state.transactions.filter(function (t) { return t.id === btn.dataset.photo; })[0];
@@ -612,9 +642,29 @@
     $("vatSupply").textContent = won(supply);
     $("vatTax").textContent = won(tax);
     $("vatTotal").textContent = won(total);
+    renderVatAuto();
+  }
+  // 이번 달 사업 거래에서 부가세 자동 집계 (입력액=부가세 포함 금액으로 간주)
+  function renderVatAuto() {
+    var sales = 0, buy = 0;
+    state.transactions.forEach(function (t) {
+      if (t.scope === "business" && inMonth(t, state.month)) {
+        if (t.type === "income") sales += t.amount; else buy += t.amount;
+      }
+    });
+    var factor = VAT_RATE / (1 + VAT_RATE);   // 포함액에서 부가세 추출 비율 (10% → 1/11)
+    var salesTax = sales * factor, buyTax = buy * factor;
+    $("vatAutoMonth").textContent = (state.month.getMonth() + 1) + "월";
+    $("vatSalesTotal").textContent = won(sales);
+    $("vatSalesTax").textContent = won(salesTax);
+    $("vatBuyTotal").textContent = won(buy);
+    $("vatBuyTax").textContent = won(buyTax);
+    $("vatPayable").textContent = won(salesTax - buyTax);
   }
 
   /* ================= 일정 (네이버 캘린더 스타일) ================= */
+  function schedVisible(s) { return state.schedFilter === "all" || (s.scope || "business") === state.schedFilter; }
+
   function setupSchedule() {
     // 색상 선택 팔레트
     $("schedColors").innerHTML = SCHEDULE_COLORS.map(function (c) {
@@ -630,12 +680,28 @@
     });
     markColor();
 
+    // 사업/개인 구분 토글
+    document.querySelectorAll("#schedScopeSeg .seg-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        document.querySelectorAll("#schedScopeSeg .seg-btn").forEach(function (b) { b.classList.remove("active"); });
+        btn.classList.add("active"); state.schedScope = btn.dataset.sscope;
+      });
+    });
+    // 전체/사업/개인 필터
+    document.querySelectorAll("#schedFilterBar .chip").forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        document.querySelectorAll("#schedFilterBar .chip").forEach(function (c) { c.classList.remove("active"); });
+        chip.classList.add("active"); state.schedFilter = chip.dataset.sfilter;
+        renderSchedule();
+      });
+    });
+
     $("schedAddBtn").addEventListener("click", function () {
       var title = $("schedTitle").value.trim();
       if (!title) { alert("일정 제목을 입력해 주세요."); return; }
       var date = $("schedDate").value || state.schedSelectedDay || todayStr();
       state.schedules.push({
-        id: uid(), date: date, time: $("schedTime").value || "",
+        id: uid(), date: date, time: $("schedTime").value || "", scope: state.schedScope,
         title: title, memo: $("schedMemo").value.trim(), color: state.schedColor
       });
       persist();
@@ -654,7 +720,7 @@
     var firstWeekday = new Date(y, m, 1).getDay(), daysInMonth = new Date(y, m + 1, 0).getDate();
     var byDay = {};
     state.schedules.forEach(function (s) {
-      if (s.date.slice(0, 7) === ymKey(state.month)) {
+      if (schedVisible(s) && s.date.slice(0, 7) === ymKey(state.month)) {
         var day = +s.date.slice(8, 10); (byDay[day] = byDay[day] || []).push(s);
       }
     });
@@ -682,13 +748,14 @@
     var listBox = $("schedDayList");
     if (!state.schedSelectedDay) { $("schedDayTitle").textContent = "날짜를 선택하세요"; listBox.innerHTML = '<p class="day-hint">달력에서 날짜를 누르면 그 날의 일정이 보여요.</p>'; return; }
     $("schedDayTitle").textContent = state.schedSelectedDay.slice(5).replace("-", "월 ") + "일 일정";
-    var list = state.schedules.filter(function (s) { return s.date === state.schedSelectedDay; })
+    var list = state.schedules.filter(function (s) { return schedVisible(s) && s.date === state.schedSelectedDay; })
       .sort(function (a, b) { return (a.time || "99").localeCompare(b.time || "99"); });
     if (!list.length) { listBox.innerHTML = '<p class="day-hint">아직 일정이 없어요. 아래에서 추가해 보세요.</p>'; return; }
     listBox.innerHTML = list.map(function (s) {
+      var scopeKo = (s.scope || "business") === "business" ? "사업" : "개인";
       return '<div class="sched-item"><span class="sched-bar" style="background:' + s.color + '"></span>' +
         '<div class="sched-main"><div class="sched-title">' + (s.time ? '<b>' + s.time + '</b> ' : '') + esc(s.title) + '</div>' +
-        (s.memo ? '<div class="sched-memo">' + esc(s.memo) + '</div>' : '') + '</div>' +
+        '<div class="sched-memo"><span class="scope-tag">' + scopeKo + '</span>' + (s.memo ? ' · ' + esc(s.memo) : '') + '</div></div>' +
         '<button class="tx-del" data-id="' + s.id + '" aria-label="삭제">×</button></div>';
     }).join("");
     listBox.querySelectorAll(".tx-del").forEach(function (btn) {
@@ -824,7 +891,7 @@
     $("pickerOverlay").addEventListener("click", function (e) { if (e.target === $("pickerOverlay")) closePicker(); });
   }
 
-  function renderAll() { renderMonthLabel(); renderDashboard(); renderList(); renderSchedule(); }
+  function renderAll() { renderMonthLabel(); renderDashboard(); renderList(); renderSchedule(); renderVatAuto(); }
 
   function init() {
     document.querySelectorAll(".tab").forEach(function (t) { t.addEventListener("click", function () { switchView(t.dataset.view); }); });

@@ -221,6 +221,11 @@
         <h2>일정</h2>
         <p class="muted"><span id="schedMonthLabel">6월</span> 일정 달력 · 날짜를 눌러 일정을 추가하세요.</p>
       </div>
+      <div class="filter-bar" id="schedFilterBar">
+        <button class="chip active" data-sfilter="all">전체</button>
+        <button class="chip" data-sfilter="business">💼 사업</button>
+        <button class="chip" data-sfilter="personal">🏠 개인</button>
+      </div>
       <div class="panel">
         <div class="cal-weekdays">
           <span class="sun">일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span class="sat">토</span>
@@ -231,6 +236,10 @@
         <h3 id="schedDayTitle">날짜를 선택하세요</h3>
         <div id="schedDayList" class="sched-list"></div>
         <div class="sched-form">
+          <div class="seg" id="schedScopeSeg">
+            <button type="button" class="seg-btn active" data-sscope="business">💼 사업</button>
+            <button type="button" class="seg-btn" data-sscope="personal">🏠 개인</button>
+          </div>
           <input type="text" id="schedTitle" placeholder="일정 제목" autocomplete="off" />
           <div class="sched-row">
             <input type="date" id="schedDate" />
@@ -263,6 +272,18 @@
           <div class="vat-row"><span>부가세 (<span id="vatRateLabel">10</span>%)</span><strong id="vatTax">₩0</strong></div>
           <div class="vat-row total"><span>합계</span><strong id="vatTotal">₩0</strong></div>
         </div>
+      </div>
+      <div class="panel">
+        <h3>이번 달 사업 거래 자동 집계 <small class="muted">(<span id="vatAutoMonth">6월</span> 기준)</small></h3>
+        <p class="muted" style="font-size:12.5px;margin-bottom:14px">등록한 사업 매출·매입(비용)에서 부가세를 자동으로 추출합니다. (입력 금액을 부가세 포함 금액으로 간주)</p>
+        <div class="vat-result">
+          <div class="vat-row"><span>매출 합계</span><strong id="vatSalesTotal">₩0</strong></div>
+          <div class="vat-row"><span>└ 매출 부가세</span><strong id="vatSalesTax">₩0</strong></div>
+          <div class="vat-row"><span>매입·비용 합계</span><strong id="vatBuyTotal">₩0</strong></div>
+          <div class="vat-row"><span>└ 매입 부가세</span><strong id="vatBuyTax">₩0</strong></div>
+          <div class="vat-row total"><span>납부 예상 부가세</span><strong id="vatPayable">₩0</strong></div>
+        </div>
+        <p class="muted" style="font-size:12px;margin-top:10px">납부 예상 = 매출 부가세 − 매입 부가세 (음수면 환급 예상)</p>
       </div>
       <p class="vat-disclaimer">본 앱의 세액 계산 결과는 입력된 자료를 바탕으로 한 단순 참고용(시뮬레이션)이며, 실제 신고 세액과 다를 수 있으므로 정확한 세금은 세무사나 홈택스를 통해 확인하시기 바랍니다.</p>
     </section>
