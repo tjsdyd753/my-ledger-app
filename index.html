@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
   <meta name="description" content="개인과 사업의 돈 흐름을 한 곳에서 관리하는 가벼운 자산관리 ERP" />
   <meta name="theme-color" content="#3182F6" />
+
+  <!-- PWA 설정 -->
+  <link rel="manifest" href="manifest.json" />
+  <!-- iOS 홈 화면 아이콘 & 전체화면 설정 -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="한손" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <title>한손 · 개인과 사업을 한 흐름으로</title>
   <link rel="stylesheet" as="style" crossorigin
@@ -333,6 +341,17 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+  <!-- PWA 서비스 워커 등록 -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("/my-ledger-app/service-worker.js")
+          .then(function () { console.log("✅ Service Worker 등록 완료"); })
+          .catch(function (e) { console.warn("SW 등록 실패:", e); });
+      });
+    }
+  </script>
 
   <script src="app.js" defer></script>
 </body>
