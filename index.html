@@ -132,12 +132,14 @@
                 <button type="button" class="seg-btn rep-btn" data-repeat="yearly">🔁 매년</button>
               </div>
             </div>
+            <!-- 사진 첨부 기능 (현재 비활성화 — 무료/단일 사용자 단계. 공용화 시 아래 주석을 풀면 됩니다)
             <div class="field">
               <label>사진 첨부 <small class="muted">(영수증 등, 선택)</small></label>
               <label for="txPhoto" class="photo-add-btn">📷 사진 추가</label>
               <input type="file" id="txPhoto" accept="image/*" multiple hidden />
               <div id="photoPreview" class="photo-preview"></div>
             </div>
+            -->
             <div class="field">
               <label for="txMemo">메모 <small class="muted">(선택)</small></label>
               <input type="text" id="txMemo" placeholder="예: 6월 클라이언트 A 용역비" autocomplete="off" />
@@ -212,6 +214,58 @@
         <div id="recurringList" class="tx-list"></div>
       </div>
     </section>
+
+    <!-- ─── 일정 (메뉴에서 진입) ─── -->
+    <section id="view-schedule" class="view">
+      <div class="section-head">
+        <h2>일정</h2>
+        <p class="muted"><span id="schedMonthLabel">6월</span> 일정 달력 · 날짜를 눌러 일정을 추가하세요.</p>
+      </div>
+      <div class="panel">
+        <div class="cal-weekdays">
+          <span class="sun">일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span class="sat">토</span>
+        </div>
+        <div id="schedCalGrid" class="cal-grid"></div>
+      </div>
+      <div class="panel">
+        <h3 id="schedDayTitle">날짜를 선택하세요</h3>
+        <div id="schedDayList" class="sched-list"></div>
+        <div class="sched-form">
+          <input type="text" id="schedTitle" placeholder="일정 제목" autocomplete="off" />
+          <div class="sched-row">
+            <input type="date" id="schedDate" />
+            <input type="time" id="schedTime" />
+          </div>
+          <div id="schedColors" class="sched-colors"></div>
+          <input type="text" id="schedMemo" placeholder="메모 (선택)" autocomplete="off" />
+          <button type="button" id="schedAddBtn" class="btn-primary">일정 추가</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── 부가세 계산기 (메뉴에서 진입) ─── -->
+    <section id="view-vat" class="view">
+      <div class="section-head">
+        <h2>부가세 간이 계산기</h2>
+        <p class="muted">금액을 입력하면 공급가액과 부가세로 자동 분리됩니다.</p>
+      </div>
+      <div class="panel">
+        <div class="seg" id="vatModeSeg">
+          <button type="button" class="seg-btn active" data-vmode="inclusive">부가세 포함 금액</button>
+          <button type="button" class="seg-btn" data-vmode="supply">공급가액(부가세 별도)</button>
+        </div>
+        <div class="field" style="margin-top:16px">
+          <label for="vatInput">금액 (원)</label>
+          <input type="text" id="vatInput" inputmode="numeric" placeholder="예: 1,100,000" autocomplete="off" />
+        </div>
+        <div class="vat-result" id="vatResult">
+          <div class="vat-row"><span>공급가액</span><strong id="vatSupply">₩0</strong></div>
+          <div class="vat-row"><span>부가세 (<span id="vatRateLabel">10</span>%)</span><strong id="vatTax">₩0</strong></div>
+          <div class="vat-row total"><span>합계</span><strong id="vatTotal">₩0</strong></div>
+        </div>
+      </div>
+      <p class="vat-disclaimer">본 앱의 세액 계산 결과는 입력된 자료를 바탕으로 한 단순 참고용(시뮬레이션)이며, 실제 신고 세액과 다를 수 있으므로 정확한 세금은 세무사나 홈택스를 통해 확인하시기 바랍니다.</p>
+    </section>
   </main>
 
   <!-- ===== 연/월 선택 바텀시트 ===== -->
@@ -238,6 +292,8 @@
       <div class="menu-divider"></div>
       <button class="menu-item" data-view="assets"><span>💰</span> 자산 관리</button>
       <button class="menu-item" data-view="recurring"><span>🔁</span> 정기 거래 관리</button>
+      <button class="menu-item" data-view="schedule"><span>📅</span> 일정</button>
+      <button class="menu-item" data-view="vat"><span>🧾</span> 부가세 계산기</button>
       <div class="menu-divider"></div>
       <button class="menu-item" id="logoutBtn"><span>🚪</span> 로그아웃</button>
     </div>

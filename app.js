@@ -12,6 +12,13 @@
   var AST_KEY = "kyul.assets.v1";
   var ACAT_KEY = "kyul.assetCategories.v1";
   var PHOTO_KEY = "kyul.photos.v1";   // 사진은 기기에만 저장(동기화 안 함)
+  var SCHED_KEY = "kyul.schedules.v1";
+
+  // ▼ 세율 등 수치는 여기서 한 번에 수정하세요 ▼
+  var VAT_RATE = 0.1;   // 부가가치세율 (10%)
+
+  // 일정 색상 (네이버 캘린더처럼 색으로 구분)
+  var SCHEDULE_COLORS = ["#3182F6", "#F04452", "#2D9D78", "#7C5CFC", "#F59E0B", "#EC4899"];
 
   function load(key, fallback) {
     try { var v = JSON.parse(localStorage.getItem(key)); return v == null ? fallback : v; }
@@ -43,11 +50,14 @@
     assets:       load(AST_KEY, []),
     assetCategories: load(ACAT_KEY, JSON.parse(JSON.stringify(DEFAULT_ASSET_CATS))),
     photos: load(PHOTO_KEY, {}),       // { 거래id: [사진 데이터,...] } — 기기 로컬
+    schedules: load(SCHED_KEY, []),    // 일정 [{id,date,time,title,memo,color}]
     month: new Date(),
     form: { scope: "business", type: "expense", repeat: "once", photos: [] },
     listFilter: "all",
     dashScope: "business",
     selectedDay: null,
+    schedSelectedDay: null,
+    schedColor: SCHEDULE_COLORS[0],
     pickerYear: null,
     assetKind: "asset",
     currentView: "dashboard",
@@ -66,12 +76,13 @@
         categories: state.categories,
         recurring: state.recurring,
         assets: state.assets,
-        assetCategories: state.assetCategories
+        assetCategories: state.assetCategories,
+        schedules: state.schedules
       }).catch(function (e) { console.warn("동기화 실패:", e); });
     } else {
       save(TX_KEY, state.transactions); save(CAT_KEY, state.categories);
       save(REC_KEY, state.recurring); save(AST_KEY, state.assets);
-      save(ACAT_KEY, state.assetCategories);
+      save(ACAT_KEY, state.assetCategories); save(SCHED_KEY, state.schedules);
     }
   }
   // 사진은 항상 기기 로컬에만 저장
@@ -98,6 +109,8 @@
     document.querySelectorAll(".tab").forEach(function (t) { t.classList.toggle("active", t.dataset.view === name); });
     if (name === "assets") renderAssets();
     if (name === "recurring") renderRecurring();
+    if (name === "schedule") renderSchedule();
+    if (name === "vat") renderVat();
     updateFab();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -128,6 +141,7 @@
   function changeMonth(delta) {
     state.month = new Date(state.month.getFullYear(), state.month.getMonth() + delta, 1);
     state.selectedDay = null;
+    state.schedSelectedDay = null;
     renderAll();
   }
   function renderMonthLabel() {
@@ -394,6 +408,7 @@
   }
   function renderPhotoPreview() {
     var box = $("photoPreview");
+    if (!box) return; // 사진 기능 비활성화 시
     box.innerHTML = state.form.photos.map(function (src, i) {
       return '<span class="photo-thumb"><img src="' + src + '" alt="첨부 사진"/><button type="button" class="photo-thumb-del" data-i="' + i + '" aria-label="삭제">✕</button></span>';
     }).join("");
@@ -402,6 +417,7 @@
     });
   }
   function setupPhotoInput() {
+    if (!$("txPhoto")) return; // 사진 기능 비활성화 시
     $("txPhoto").addEventListener("change", function (e) {
       var files = Array.prototype.slice.call(e.target.files || []);
       var jobs = files.map(function (f) { return resizeImage(f); });
@@ -565,6 +581,125 @@
     });
   }
 
+  /* ================= 부가세 계산기 ================= */
+  function setupVat() {
+    $("vatRateLabel").textContent = Math.round(VAT_RATE * 100);
+    document.querySelectorAll("#vatModeSeg .seg-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        document.querySelectorAll("#vatModeSeg .seg-btn").forEach(function (b) { b.classList.remove("active"); });
+        btn.classList.add("active"); renderVat();
+      });
+    });
+    $("vatInput").addEventListener("input", function (e) {
+      var raw = onlyNum(e.target.value); e.target.value = raw ? raw.toLocaleString("ko-KR") : "";
+      renderVat();
+    });
+  }
+  function renderVat() {
+    var amount = onlyNum($("vatInput").value);
+    var modeBtn = document.querySelector("#vatModeSeg .seg-btn.active");
+    var mode = modeBtn ? modeBtn.dataset.vmode : "inclusive";
+    var supply, tax, total;
+    if (mode === "inclusive") {       // 입력값이 부가세가 포함된 금액
+      supply = amount / (1 + VAT_RATE);
+      tax = amount - supply;
+      total = amount;
+    } else {                          // 입력값이 공급가액(부가세 별도)
+      supply = amount;
+      tax = amount * VAT_RATE;
+      total = amount + tax;
+    }
+    $("vatSupply").textContent = won(supply);
+    $("vatTax").textContent = won(tax);
+    $("vatTotal").textContent = won(total);
+  }
+
+  /* ================= 일정 (네이버 캘린더 스타일) ================= */
+  function setupSchedule() {
+    // 색상 선택 팔레트
+    $("schedColors").innerHTML = SCHEDULE_COLORS.map(function (c) {
+      return '<button type="button" class="sched-color" data-c="' + c + '" style="background:' + c + '"></button>';
+    }).join("");
+    function markColor() {
+      $("schedColors").querySelectorAll(".sched-color").forEach(function (b) {
+        b.classList.toggle("active", b.dataset.c === state.schedColor);
+      });
+    }
+    $("schedColors").querySelectorAll(".sched-color").forEach(function (b) {
+      b.addEventListener("click", function () { state.schedColor = b.dataset.c; markColor(); });
+    });
+    markColor();
+
+    $("schedAddBtn").addEventListener("click", function () {
+      var title = $("schedTitle").value.trim();
+      if (!title) { alert("일정 제목을 입력해 주세요."); return; }
+      var date = $("schedDate").value || state.schedSelectedDay || todayStr();
+      state.schedules.push({
+        id: uid(), date: date, time: $("schedTime").value || "",
+        title: title, memo: $("schedMemo").value.trim(), color: state.schedColor
+      });
+      persist();
+      $("schedTitle").value = ""; $("schedTime").value = ""; $("schedMemo").value = "";
+      state.schedSelectedDay = date;
+      renderSchedule();
+    });
+  }
+  function renderSchedule() {
+    $("schedMonthLabel").textContent = (state.month.getMonth() + 1) + "월";
+    renderSchedCalendar();
+    renderSchedDay();
+  }
+  function renderSchedCalendar() {
+    var grid = $("schedCalGrid"), y = state.month.getFullYear(), m = state.month.getMonth();
+    var firstWeekday = new Date(y, m, 1).getDay(), daysInMonth = new Date(y, m + 1, 0).getDate();
+    var byDay = {};
+    state.schedules.forEach(function (s) {
+      if (s.date.slice(0, 7) === ymKey(state.month)) {
+        var day = +s.date.slice(8, 10); (byDay[day] = byDay[day] || []).push(s);
+      }
+    });
+    var today = new Date(), isThisMonth = today.getFullYear() === y && today.getMonth() === m, html = "";
+    for (var b = 0; b < firstWeekday; b++) html += '<span class="cal-cell empty-cell"></span>';
+    for (var day = 1; day <= daysInMonth; day++) {
+      var key = dKey(y, m, day), evs = byDay[day], wd = new Date(y, m, day).getDay(), cls = "cal-cell";
+      if (wd === 0) cls += " sun"; if (wd === 6) cls += " sat";
+      if (isThisMonth && today.getDate() === day) cls += " today";
+      if (state.schedSelectedDay === key) cls += " selected";
+      var dots = "";
+      if (evs) evs.slice(0, 3).forEach(function (e) { dots += '<i class="cd" style="background:' + e.color + '"></i>'; });
+      html += '<button class="' + cls + '" data-date="' + key + '"><span class="cal-day">' + day + '</span><span class="cal-dots">' + dots + '</span></button>';
+    }
+    grid.innerHTML = html;
+    grid.querySelectorAll(".cal-cell[data-date]").forEach(function (cell) {
+      cell.addEventListener("click", function () {
+        state.schedSelectedDay = cell.dataset.date;
+        $("schedDate").value = cell.dataset.date;
+        renderSchedCalendar(); renderSchedDay();
+      });
+    });
+  }
+  function renderSchedDay() {
+    var listBox = $("schedDayList");
+    if (!state.schedSelectedDay) { $("schedDayTitle").textContent = "날짜를 선택하세요"; listBox.innerHTML = '<p class="day-hint">달력에서 날짜를 누르면 그 날의 일정이 보여요.</p>'; return; }
+    $("schedDayTitle").textContent = state.schedSelectedDay.slice(5).replace("-", "월 ") + "일 일정";
+    var list = state.schedules.filter(function (s) { return s.date === state.schedSelectedDay; })
+      .sort(function (a, b) { return (a.time || "99").localeCompare(b.time || "99"); });
+    if (!list.length) { listBox.innerHTML = '<p class="day-hint">아직 일정이 없어요. 아래에서 추가해 보세요.</p>'; return; }
+    listBox.innerHTML = list.map(function (s) {
+      return '<div class="sched-item"><span class="sched-bar" style="background:' + s.color + '"></span>' +
+        '<div class="sched-main"><div class="sched-title">' + (s.time ? '<b>' + s.time + '</b> ' : '') + esc(s.title) + '</div>' +
+        (s.memo ? '<div class="sched-memo">' + esc(s.memo) + '</div>' : '') + '</div>' +
+        '<button class="tx-del" data-id="' + s.id + '" aria-label="삭제">×</button></div>';
+    }).join("");
+    listBox.querySelectorAll(".tx-del").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        if (!confirm("이 일정을 삭제할까요?")) return;
+        state.schedules = state.schedules.filter(function (s) { return s.id !== btn.dataset.id; });
+        persist(); renderSchedule();
+      });
+    });
+  }
+
   /* ================= 연/월 선택 ================= */
   function openPicker() { state.pickerYear = state.month.getFullYear(); renderPicker(); $("pickerOverlay").hidden = false; }
   function closePicker() { $("pickerOverlay").hidden = true; }
@@ -574,7 +709,7 @@
     for (var i = 0; i < 12; i++) html += '<button class="pm' + ((state.pickerYear === curY && i === curM) ? " active" : "") + '" data-m="' + i + '">' + (i + 1) + '월</button>';
     $("pickerMonths").innerHTML = html;
     $("pickerMonths").querySelectorAll(".pm").forEach(function (btn) {
-      btn.addEventListener("click", function () { state.month = new Date(state.pickerYear, +btn.dataset.m, 1); state.selectedDay = null; closePicker(); renderAll(); });
+      btn.addEventListener("click", function () { state.month = new Date(state.pickerYear, +btn.dataset.m, 1); state.selectedDay = null; state.schedSelectedDay = null; closePicker(); renderAll(); });
     });
   }
 
@@ -655,6 +790,7 @@
         state.recurring       = d.recurring        || [];
         state.assets          = d.assets           || [];
         state.assetCategories = d.assetCategories  || JSON.parse(JSON.stringify(DEFAULT_ASSET_CATS));
+        state.schedules       = d.schedules        || [];
       } else {
         // 처음 로그인한 새 사용자: 빈 상태로 시작 (테스트 데이터 없음)
         state.transactions = [];
@@ -662,9 +798,10 @@
         state.recurring = [];
         state.assets = [];
         state.assetCategories = JSON.parse(JSON.stringify(DEFAULT_ASSET_CATS));
+        state.schedules = [];
         persist();
       }
-      state.selectedDay = null;
+      state.selectedDay = null; state.schedSelectedDay = null;
       generateRecurring();        // 밀린 정기거래 채우기
       refreshCategoryOptions();
       refreshAssetCategoryOptions();
@@ -687,13 +824,14 @@
     $("pickerOverlay").addEventListener("click", function (e) { if (e.target === $("pickerOverlay")) closePicker(); });
   }
 
-  function renderAll() { renderMonthLabel(); renderDashboard(); renderList(); }
+  function renderAll() { renderMonthLabel(); renderDashboard(); renderList(); renderSchedule(); }
 
   function init() {
     document.querySelectorAll(".tab").forEach(function (t) { t.addEventListener("click", function () { switchView(t.dataset.view); }); });
     $("prevMonth").addEventListener("click", function () { changeMonth(-1); });
     $("nextMonth").addEventListener("click", function () { changeMonth(1); });
     setupForm(); setupListControls(); setupDashToggle(); setupPicker(); setupMenu(); setupAssets();
+    setupVat(); setupSchedule();
     $("fab").addEventListener("click", function () { openInput(); });
     $("inputClose").addEventListener("click", function () { closeInput(); });
     $("inputOverlay").addEventListener("click", function (e) { if (e.target === $("inputOverlay")) closeInput(); });
