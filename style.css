@@ -24,7 +24,7 @@
   --font-body: "Pretendard Variable", Pretendard, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; min-width: 0; }
 
 body {
   font-family: var(--font-body);
@@ -35,6 +35,7 @@ body {
   letter-spacing: -.01em;
   -webkit-font-smoothing: antialiased;
   padding-bottom: 88px;
+  overflow-x: hidden;
 }
 
 /* ---------- 상단 헤더 ---------- */
@@ -160,7 +161,9 @@ body {
   font-family: inherit; font-size: 16px; color: var(--ink); font-weight: 500;
   background: var(--surface-2);
   border: 2px solid transparent; border-radius: var(--radius-sm);
-  padding: 14px 15px; width: 100%;
+  padding: 14px 15px; width: 100%; max-width: 100%;
+  /* 모바일 date/time 필드 넘침 방지 */
+  -webkit-appearance: none; appearance: none;
 }
 .field input::placeholder { color: var(--muted); font-weight: 400; }
 .field input:focus, .field select:focus {
@@ -482,8 +485,8 @@ body { padding-bottom: 36px; }
 /* 입력 모드 토글 (거래 / 일정) */
 .input-mode-seg { margin-bottom: 18px; }
 #inlineSchedSection { display: none; }
-.time-range { display: flex; align-items: center; gap: 8px; }
-.time-range input[type="time"] { flex: 1; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); font-size: 15px; color: var(--ink); outline: none; }
+.time-range { display: flex; align-items: center; gap: 8px; width: 100%; overflow: hidden; }
+.time-range input[type="time"] { flex: 1; min-width: 0; width: 0; padding: 10px 8px; border: 1.5px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); font-size: 15px; color: var(--ink); outline: none; -webkit-appearance: none; appearance: none; }
 .time-range input[type="time"]:focus { border-color: var(--primary); }
 .time-sep { color: var(--muted); font-weight: 700; flex-shrink: 0; }
 .sched-time { font-size: 12px; font-weight: 600; color: var(--primary); margin-right: 4px; }
@@ -509,10 +512,12 @@ body { padding-bottom: 36px; }
   background: rgba(0,0,0,.45);
   display: flex; align-items: flex-start; justify-content: center;
   padding: 10px 8px 8px;
+  overflow: hidden;
   animation: fade .2s ease;
 }
 .modal-sheet {
-  background: var(--surface); width: 100%; max-width: 480px;
+  background: var(--surface);
+  width: 100%; max-width: min(480px, calc(100vw - 16px));
   height: calc(100dvh - 18px);
   height: calc(100vh - 18px);
   display: flex; flex-direction: column;
@@ -673,9 +678,11 @@ body { padding-bottom: 36px; }
   .kpi-card { padding: 14px 12px 12px; }
   .kpi-label { font-size: 12px; }
   .kpi-sub { font-size: 11.5px; }
-  .modal-overlay { padding: 8px 6px 6px; }
-  .modal-sheet { height: calc(100dvh - 14px); height: calc(100vh - 14px); border-radius: 22px; }
-  .modal-body { padding: 14px 16px calc(16px + env(safe-area-inset-bottom)); }
+  .modal-overlay { padding: 8px 6px 6px; overflow: hidden; }
+  .modal-sheet { height: calc(100dvh - 14px); height: calc(100vh - 14px); border-radius: 22px; max-width: calc(100vw - 12px); }
+  .modal-body { padding: 14px 14px calc(16px + env(safe-area-inset-bottom)); overflow-x: hidden; }
+  .tx-form { width: 100%; overflow-x: hidden; }
+  .field input, .field select { font-size: 15px; padding: 12px 12px; }
 }
 
 /* ============================================
