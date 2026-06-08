@@ -303,6 +303,7 @@
   function changeMonth(delta) {
     state.month = new Date(state.month.getFullYear(), state.month.getMonth() + delta, 1);
     state.selectedDay = null;
+    generateRecurring();
     renderAll();
   }
   function renderMonthLabel() {
@@ -321,10 +322,15 @@
     return dKey(y, m, d);
   }
   function generateRecurring() {
-    var today = todayStr(), touched = false;
+    var today = todayStr();
+    // 현재 보고 있는 달의 마지막 날까지도 생성 (미래 날짜 포함, 달력에 표시)
+    var vm = state.month;
+    var endOfViewedMonth = vm.getFullYear() + "-" + pad(vm.getMonth() + 1) + "-" + pad(new Date(vm.getFullYear(), vm.getMonth() + 1, 0).getDate());
+    var cutoff = endOfViewedMonth > today ? endOfViewedMonth : today;
+    var touched = false;
     state.recurring.forEach(function (r) {
       var guard = 0;
-      while (r.nextDate <= today && guard < 600) {
+      while (r.nextDate <= cutoff && guard < 600) {
         // 같은 정기거래의 같은 날짜 거래가 이미 있으면 건너뜀 (중복 방지)
         var exists = state.transactions.some(function (t) { return t.recurringId === r.id && t.date === r.nextDate; });
         if (!exists) {
@@ -866,7 +872,7 @@
     for (var i = 0; i < 12; i++) html += '<button class="pm' + ((state.pickerYear === curY && i === curM) ? " active" : "") + '" data-m="' + i + '">' + (i + 1) + '월</button>';
     $("pickerMonths").innerHTML = html;
     $("pickerMonths").querySelectorAll(".pm").forEach(function (btn) {
-      btn.addEventListener("click", function () { state.month = new Date(state.pickerYear, +btn.dataset.m, 1); state.selectedDay = null; closePicker(); renderAll(); });
+      btn.addEventListener("click", function () { state.month = new Date(state.pickerYear, +btn.dataset.m, 1); state.selectedDay = null; closePicker(); generateRecurring(); renderAll(); });
     });
   }
 
