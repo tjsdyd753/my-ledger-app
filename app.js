@@ -13,6 +13,7 @@
   var ACAT_KEY = "kyul.assetCategories.v1";
   var PHOTO_KEY = "kyul.photos.v1";   // 사진은 기기에만 저장(동기화 안 함)
   var SCHED_KEY = "kyul.schedules.v1";
+  var SAL_KEY   = "kyul.salary.v1";
 
   function load(key, fallback) {
     try { var v = JSON.parse(localStorage.getItem(key)); return v == null ? fallback : v; }
@@ -35,6 +36,16 @@
   };
   var DEFAULT_ASSET_CATS = { asset: ["현금", "예·적금", "투자", "부동산", "기타 자산"],
                      liability: ["카드 대금", "대출", "기타 부채"] };
+  var DEFAULT_SALARY = {
+    monthly: 0,
+    cats: [
+      { id: "fixed",     name: "고정지출",    color: "#F4A823", emoji: "🏠", items: [] },
+      { id: "savings",   name: "적금",        color: "#27AE60", emoji: "🏦", items: [] },
+      { id: "invest",    name: "투자",        color: "#26A69A", emoji: "📈", items: [] },
+      { id: "living",    name: "생활비·부가세", color: "#E57373", emoji: "🛒", items: [] },
+      { id: "emergency", name: "비상금",      color: "#00BCD4", emoji: "🆘", items: [] }
+    ]
+  };
 
   /* ---------- 상태 ---------- */
   var state = {
@@ -45,6 +56,7 @@
     assetCategories: load(ACAT_KEY, JSON.parse(JSON.stringify(DEFAULT_ASSET_CATS))),
     photos: load(PHOTO_KEY, {}),       // { 거래id: [사진 데이터,...] } — 기기 로컬
     schedules: load(SCHED_KEY, []),
+    salary:    load(SAL_KEY, JSON.parse(JSON.stringify(DEFAULT_SALARY))),
     month: new Date(),
     form: { scope: "business", type: "expense", repeat: "once", photos: [], editId: null },
     listFilter: "all",
@@ -69,13 +81,15 @@
         recurring: state.recurring,
         assets: state.assets,
         assetCategories: state.assetCategories,
-        schedules: state.schedules
+        schedules: state.schedules,
+        salary: state.salary
       }).catch(function (e) { console.warn("동기화 실패:", e); });
     } else {
       save(TX_KEY, state.transactions); save(CAT_KEY, state.categories);
       save(REC_KEY, state.recurring); save(AST_KEY, state.assets);
       save(ACAT_KEY, state.assetCategories);
       save(SCHED_KEY, state.schedules);
+      save(SAL_KEY, state.salary);
     }
   }
   // 사진은 항상 기기 로컬에만 저장
@@ -113,6 +127,7 @@
     if (name === "assets") renderAssets();
     if (name === "recurring") renderRecurring();
     if (name === "vat") renderVatView();
+    if (name === "salary") renderSalary();
     updateFab();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -211,7 +226,8 @@
   }
   // 입력 화면이거나 메뉴가 열려 있으면 입력 버튼을 숨깁니다
   function updateFab() {
-    $("fab").hidden = state.menuOpen || state.inputOpen;
+    var noFab = ["assets", "recurring", "vat", "salary"];
+    $("fab").hidden = state.menuOpen || state.inputOpen || noFab.indexOf(state.currentView) !== -1;
   }
   var inInputMode = "tx";
   var inSchedColor = "blue";
@@ -910,6 +926,109 @@
     });
   }
 
+  /* ================= 월급 배분표 ================= */
+  function renderSalaryBudget() {
+    var sal = state.salary, panel = $("salaryBudgetPanel"), cardsBox = $("salaryCatCards");
+    if (!panel || !cardsBox) return;
+    var totalAllocated = 0;
+    sal.cats.forEach(function (c) { c.items.forEach(function (it) { totalAllocated += it.amount; }); });
+    var monthly = sal.monthly || 0, remaining = monthly - totalAllocated;
+
+    if (monthly > 0) {
+      var barSegs = sal.cats.map(function (c) {
+        var ct = c.items.reduce(function (s, it) { return s + it.amount; }, 0);
+        var pct = Math.min(100, ct / monthly * 100);
+        return pct > 0 ? '<div class="sal-seg" style="flex:' + pct.toFixed(2) + ';background:' + c.color + '"></div>' : '';
+      }).join("") + '<div class="sal-seg" style="flex:' + Math.max(0, (remaining / monthly * 100)).toFixed(2) + ';background:var(--surface-2)"></div>';
+      var legendHtml = sal.cats.map(function (c) {
+        var ct = c.items.reduce(function (s, it) { return s + it.amount; }, 0);
+        if (!ct) return '';
+        return '<span class="sal-leg"><i style="background:' + c.color + '"></i>' + esc(c.name) + ' ' + Math.round(ct / monthly * 100) + '%</span>';
+      }).filter(Boolean).join("");
+      var over = remaining < 0;
+      panel.innerHTML =
+        '<div class="sal-kpi-row">' +
+          '<div class="sal-kpi"><div class="sal-kpi-label">배분 완료</div><div class="sal-kpi-val">' + won(totalAllocated) + '</div></div>' +
+          '<div class="sal-kpi-divider"></div>' +
+          '<div class="sal-kpi"><div class="sal-kpi-label">' + (over ? '초과' : '잔여') + '</div><div class="sal-kpi-val ' + (over ? 'expense' : 'income') + '">' + won(Math.abs(remaining)) + '</div></div>' +
+        '</div>' +
+        '<div class="sal-bar-wrap"><div class="sal-bar">' + barSegs + '</div></div>' +
+        (legendHtml ? '<div class="sal-legend">' + legendHtml + '</div>' : '');
+    } else {
+      panel.innerHTML = '<p class="empty">월급을 입력하면 배분 현황이 보여요.</p>';
+    }
+
+    cardsBox.innerHTML = sal.cats.map(function (c, ci) {
+      var ct = c.items.reduce(function (s, it) { return s + it.amount; }, 0);
+      var pct = monthly > 0 ? Math.min(100, ct / monthly * 100) : 0;
+      var itemsHtml = c.items.length
+        ? '<div class="sal-items">' + c.items.map(function (it) {
+            return '<div class="sal-item"><span class="sal-item-name">' + esc(it.name) + '</span><span class="sal-item-amt">' + won(it.amount) + '</span><button class="tx-del" data-ci="' + ci + '" data-id="' + it.id + '">×</button></div>';
+          }).join("") + '</div>' : '';
+      return '<div class="sal-card">' +
+        '<div class="sal-card-head" style="border-left-color:' + c.color + '">' +
+          '<div class="sal-title-row">' +
+            '<span class="sal-emoji">' + c.emoji + '</span>' +
+            '<span class="sal-name">' + esc(c.name) + '</span>' +
+            (ct > 0 ? '<span class="sal-cat-total">' + won(ct) + '</span>' + (monthly > 0 ? '<span class="sal-cat-pct">' + Math.round(pct) + '%</span>' : '') : '') +
+          '</div>' +
+          '<div class="sal-progress"><div class="sal-progress-fill" style="width:' + pct.toFixed(1) + '%;background:' + c.color + '"></div></div>' +
+        '</div>' +
+        itemsHtml +
+        '<div class="sal-add-row" data-ci="' + ci + '">' +
+          '<input type="text" class="sal-add-name" placeholder="항목 이름" autocomplete="off" />' +
+          '<input type="text" class="sal-add-amt" inputmode="numeric" placeholder="금액" autocomplete="off" />' +
+          '<button class="sal-add-btn" data-ci="' + ci + '">＋</button>' +
+        '</div>' +
+      '</div>';
+    }).join("");
+
+    cardsBox.querySelectorAll(".tx-del").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var ci = +btn.dataset.ci;
+        state.salary.cats[ci].items = state.salary.cats[ci].items.filter(function (it) { return it.id !== btn.dataset.id; });
+        persist(); renderSalaryBudget();
+      });
+    });
+    cardsBox.querySelectorAll(".sal-add-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var ci = +btn.dataset.ci, row = btn.parentNode;
+        var nameInp = row.querySelector(".sal-add-name"), amtInp = row.querySelector(".sal-add-amt");
+        var name = nameInp.value.trim(), amt = onlyNum(amtInp.value);
+        if (!name || !amt) return;
+        state.salary.cats[ci].items.push({ id: uid(), name: name, amount: amt });
+        persist(); renderSalaryBudget();
+      });
+    });
+    cardsBox.querySelectorAll(".sal-add-amt").forEach(function (inp) {
+      inp.addEventListener("input", function () { var r = onlyNum(inp.value); inp.value = r ? r.toLocaleString("ko-KR") : ""; });
+      inp.addEventListener("keydown", function (e) {
+        if (e.key !== "Enter") return;
+        var ci = +inp.parentNode.dataset.ci, row = inp.parentNode;
+        var name = row.querySelector(".sal-add-name").value.trim(), amt = onlyNum(inp.value);
+        if (!name || !amt) return;
+        state.salary.cats[ci].items.push({ id: uid(), name: name, amount: amt });
+        persist(); renderSalaryBudget();
+      });
+    });
+    cardsBox.querySelectorAll(".sal-add-name").forEach(function (inp) {
+      inp.addEventListener("keydown", function (e) { if (e.key === "Enter") inp.parentNode.querySelector(".sal-add-amt").focus(); });
+    });
+  }
+  function renderSalary() {
+    var sal = state.salary;
+    $("salaryMonthly").value = sal.monthly ? sal.monthly.toLocaleString("ko-KR") : "";
+    renderSalaryBudget();
+  }
+  function setupSalary() {
+    $("salaryMonthly").addEventListener("input", function (e) {
+      var raw = onlyNum(e.target.value);
+      e.target.value = raw ? raw.toLocaleString("ko-KR") : "";
+      state.salary.monthly = raw || 0;
+      persist(); renderSalaryBudget();
+    });
+  }
+
   /* ================= 연/월 선택 ================= */
   function openPicker() { state.pickerYear = state.month.getFullYear(); renderPicker(); $("pickerOverlay").hidden = false; }
   function closePicker() { $("pickerOverlay").hidden = true; }
@@ -1058,6 +1177,7 @@
         state.assets          = d.assets           || [];
         state.assetCategories = d.assetCategories  || JSON.parse(JSON.stringify(DEFAULT_ASSET_CATS));
         state.schedules       = d.schedules        || [];
+        state.salary          = d.salary           || JSON.parse(JSON.stringify(DEFAULT_SALARY));
       } else {
         // 처음 로그인한 새 사용자: 빈 상태로 시작 (테스트 데이터 없음)
         state.transactions = [];
@@ -1066,6 +1186,7 @@
         state.assets = [];
         state.assetCategories = JSON.parse(JSON.stringify(DEFAULT_ASSET_CATS));
         state.schedules = [];
+        state.salary = JSON.parse(JSON.stringify(DEFAULT_SALARY));
         persist();
       }
       state.selectedDay = null;
@@ -1106,7 +1227,7 @@
     document.querySelectorAll(".tab").forEach(function (t) { t.addEventListener("click", function () { switchView(t.dataset.view); }); });
     $("prevMonth").addEventListener("click", function () { changeMonth(-1); });
     $("nextMonth").addEventListener("click", function () { changeMonth(1); });
-    setupForm(); setupListControls(); setupDashToggle(); setupPicker(); setupMenu(); setupAssets(); setupSchedModal();
+    setupForm(); setupListControls(); setupDashToggle(); setupPicker(); setupMenu(); setupAssets(); setupSchedModal(); setupSalary();
     $("fab").addEventListener("click", openInput);
     // 입력 모드 토글 (거래 / 일정)
     document.querySelectorAll("#inputModeSeg .seg-btn").forEach(function (btn) {

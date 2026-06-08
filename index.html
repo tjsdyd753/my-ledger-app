@@ -291,6 +291,25 @@
         <div id="recurringList" class="tx-list"></div>
       </div>
     </section>
+
+    <!-- ─── 월급 배분표 (메뉴에서 진입) ─── -->
+    <section id="view-salary" class="view">
+      <div class="section-head">
+        <h2>월급 배분표</h2>
+        <p class="muted">월급을 항목별로 미리 나눠봐요.</p>
+      </div>
+      <div class="panel">
+        <div class="salary-monthly-row">
+          <span class="salary-monthly-label">이번 달 월급</span>
+          <div class="salary-monthly-wrap">
+            <span class="salary-won-sign">₩</span>
+            <input type="text" id="salaryMonthly" inputmode="numeric" placeholder="0" autocomplete="off" />
+          </div>
+        </div>
+      </div>
+      <div class="panel" id="salaryBudgetPanel"><p class="empty">월급을 입력하면 배분 현황이 보여요.</p></div>
+      <div id="salaryCatCards"></div>
+    </section>
   </main>
 
   <!-- ===== 연/월 선택 바텀시트 ===== -->
@@ -316,6 +335,7 @@
       <button class="menu-item" data-view="list"><span>📑</span> 거래 내역</button>
       <button class="menu-item" data-view="sched"><span>📅</span> 일정 등록</button>
       <div class="menu-divider"></div>
+      <button class="menu-item" data-view="salary"><span>💵</span> 월급 배분표</button>
       <button class="menu-item" data-view="vat"><span>🧾</span> 부가세 계산기</button>
       <button class="menu-item" data-view="assets"><span>💰</span> 자산 관리</button>
       <button class="menu-item" data-view="recurring"><span>🔁</span> 정기 거래 관리</button>

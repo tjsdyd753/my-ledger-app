@@ -445,6 +445,74 @@ body {
 .asset-form input:focus, .asset-form select:focus { outline: none; border-color: var(--primary); background: #fff; }
 .asset-form .btn-primary { margin-top: 2px; }
 
+/* ───── 월급 배분표 ───── */
+.salary-monthly-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.salary-monthly-label { font-weight: 700; font-size: 15px; color: var(--ink); white-space: nowrap; }
+.salary-monthly-wrap {
+  display: flex; align-items: center; gap: 4px;
+  background: var(--surface-2); border-radius: 10px; padding: 10px 14px; flex: 1;
+}
+.salary-won-sign { font-weight: 800; font-size: 20px; color: var(--primary); }
+#salaryMonthly {
+  border: none; background: transparent; font-family: inherit;
+  font-size: 20px; font-weight: 800; color: var(--primary);
+  text-align: right; flex: 1; min-width: 0;
+}
+#salaryMonthly:focus { outline: none; }
+#salaryMonthly::placeholder { color: var(--text-2); font-weight: 400; font-size: 15px; }
+
+/* 요약 패널 */
+.sal-kpi-row { display: flex; align-items: center; margin-bottom: 14px; }
+.sal-kpi { flex: 1; text-align: center; }
+.sal-kpi-label { font-size: 12px; color: var(--text-2); font-weight: 600; margin-bottom: 4px; }
+.sal-kpi-val { font-size: 19px; font-weight: 800; }
+.sal-kpi-val.income { color: var(--primary); }
+.sal-kpi-val.expense { color: var(--expense); }
+.sal-kpi-divider { width: 1px; height: 36px; background: var(--border); flex-shrink: 0; }
+.sal-bar-wrap { margin-bottom: 10px; }
+.sal-bar { height: 12px; border-radius: 6px; overflow: hidden; background: var(--surface-2); display: flex; }
+.sal-seg { height: 100%; min-width: 2px; }
+.sal-legend { display: flex; flex-wrap: wrap; gap: 5px 10px; }
+.sal-leg { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-2); font-weight: 600; }
+.sal-leg i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* 카테고리 카드 */
+.sal-card {
+  background: var(--surface); border-radius: var(--radius);
+  margin: 0 16px 12px; overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+.sal-card-head { padding: 14px 16px 10px; border-left: 4px solid transparent; }
+.sal-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.sal-emoji { font-size: 18px; line-height: 1; }
+.sal-name { font-weight: 700; font-size: 15px; flex: 1; color: var(--ink); }
+.sal-cat-total { font-size: 15px; font-weight: 800; color: var(--ink); }
+.sal-cat-pct { font-size: 12px; color: var(--text-2); font-weight: 600; margin-left: 3px; }
+.sal-progress { height: 5px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+.sal-progress-fill { height: 100%; border-radius: 3px; transition: width .35s ease; }
+
+/* 항목 */
+.sal-items { border-top: 1px solid var(--border); }
+.sal-item { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--border); }
+.sal-item-name { flex: 1; font-size: 14px; color: var(--ink); }
+.sal-item-amt { font-size: 14px; font-weight: 700; color: var(--ink); white-space: nowrap; }
+
+/* 항목 추가 행 */
+.sal-add-row { display: flex; align-items: center; gap: 6px; padding: 10px 12px; border-top: 1px solid var(--border); }
+.sal-add-name, .sal-add-amt {
+  background: var(--surface-2); border: none; border-radius: 8px;
+  padding: 8px 10px; font-family: inherit; font-size: 13px; color: var(--ink); min-width: 0;
+}
+.sal-add-name { flex: 1.2; }
+.sal-add-amt { flex: 1; }
+.sal-add-name:focus, .sal-add-amt:focus { outline: 2px solid var(--primary); }
+.sal-add-btn {
+  background: var(--primary); color: #fff; border: none; border-radius: 8px;
+  padding: 8px 13px; font-size: 17px; font-weight: 700; cursor: pointer; flex-shrink: 0;
+  transition: transform .1s ease;
+}
+.sal-add-btn:active { transform: scale(.9); }
+
 /* ---------- 메뉴 드로어 (오른쪽에서 슬라이드) ---------- */
 .menu-overlay[hidden] { display: none; }
 .menu-overlay {

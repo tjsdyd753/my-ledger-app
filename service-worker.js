@@ -5,7 +5,7 @@
    ============================================================ */
 
 // ★ 업데이트 배포 시 이 버전 번호를 올려주세요 (예: v3, v4...)
-var CACHE_NAME = "hansohn-v7";
+var CACHE_NAME = "hansohn-v8";
 
 var STATIC_FILES = [
   "/my-ledger-app/",
