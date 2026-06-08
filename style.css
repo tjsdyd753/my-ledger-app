@@ -162,9 +162,12 @@ body {
   background: var(--surface-2);
   border: 2px solid transparent; border-radius: var(--radius-sm);
   padding: 14px 15px; width: 100%; max-width: 100%;
-  /* 모바일 date/time 필드 넘침 방지 */
-  -webkit-appearance: none; appearance: none;
 }
+/* select만 appearance 초기화 (date/time은 네이티브 피커 유지) */
+.field select { -webkit-appearance: none; appearance: none; }
+/* date/time 입력 넘침만 차단 */
+.field input[type="date"],
+.field input[type="time"] { min-width: 0; width: 100%; }
 .field input::placeholder { color: var(--muted); font-weight: 400; }
 .field input:focus, .field select:focus {
   outline: none; border-color: var(--primary); background: #fff;
@@ -486,7 +489,7 @@ body { padding-bottom: 36px; }
 .input-mode-seg { margin-bottom: 18px; }
 #inlineSchedSection { display: none; }
 .time-range { display: flex; align-items: center; gap: 8px; width: 100%; overflow: hidden; }
-.time-range input[type="time"] { flex: 1; min-width: 0; width: 0; padding: 10px 8px; border: 1.5px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); font-size: 15px; color: var(--ink); outline: none; -webkit-appearance: none; appearance: none; }
+.time-range input[type="time"] { flex: 1; min-width: 0; width: 0; padding: 10px 8px; border: 1.5px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); font-size: 15px; color: var(--ink); outline: none; }
 .time-range input[type="time"]:focus { border-color: var(--primary); }
 .time-sep { color: var(--muted); font-weight: 700; flex-shrink: 0; }
 .sched-time { font-size: 12px; font-weight: 600; color: var(--primary); margin-right: 4px; }
