@@ -59,6 +59,18 @@
       </div>
       <div class="kpi-grid kpi-4" id="kpiGrid"></div>
       <div class="panel">
+        <div class="cal-weekdays">
+          <span class="sun">일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span class="sat">토</span>
+        </div>
+        <div id="calendarGrid" class="cal-grid"></div>
+        <div id="dayDetail" class="day-detail"></div>
+      </div>
+      <div class="panel">
+        <h3 id="catTitle">비용 카테고리 <small class="muted">(많이 쓴 순)</small></h3>
+        <div id="categoryBreakdown" class="cat-list"></div>
+      </div>
+      <div id="vatPanel" class="panel" hidden></div>
+      <div class="panel">
         <h3 id="trendTitle">최근 6개월 추세</h3>
         <div id="trendChart" class="trend-chart"></div>
         <div class="legend">
@@ -66,29 +78,24 @@
           <span><i class="dot expense"></i><span id="legendExpense">비용</span></span>
         </div>
       </div>
-      <div class="panel">
-        <h3 id="catTitle">비용 카테고리 <small class="muted">(많이 쓴 순)</small></h3>
-        <div id="categoryBreakdown" class="cat-list"></div>
-      </div>
-      <div class="panel">
-        <h3 id="calTitle">일별 달력</h3>
-        <div class="cal-weekdays">
-          <span class="sun">일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span class="sat">토</span>
-        </div>
-        <div id="calendarGrid" class="cal-grid"></div>
-        <div id="dayDetail" class="day-detail"></div>
-      </div>
     </section>
 
     <!-- ─── 입력 ─── -->
     <!-- ─── 입력 팝업(모달) ─── -->
     <div id="inputOverlay" class="modal-overlay" hidden>
       <div class="modal-sheet">
+        <div class="modal-grab"></div>
         <div class="modal-head">
-          <strong>거래 입력</strong>
+          <strong id="inputModalTitle"></strong>
           <button type="button" id="inputClose" class="modal-close" aria-label="닫기">✕</button>
         </div>
         <div class="modal-body">
+          <!-- 입력 모드 토글 -->
+          <div class="seg input-mode-seg" id="inputModeSeg">
+            <button type="button" class="seg-btn active" data-imode="tx">📝 거래 입력</button>
+            <button type="button" class="seg-btn" data-imode="sched">📅 일정 추가</button>
+          </div>
+
           <form id="txForm" class="tx-form" novalidate>
             <div class="field">
               <label>구분</label>
@@ -132,19 +139,67 @@
                 <button type="button" class="seg-btn rep-btn" data-repeat="yearly">🔁 매년</button>
               </div>
             </div>
+            <!-- 사진 첨부 (임시 비활성화)
             <div class="field">
               <label>사진 첨부 <small class="muted">(영수증 등, 선택)</small></label>
               <label for="txPhoto" class="photo-add-btn">📷 사진 추가</label>
               <input type="file" id="txPhoto" accept="image/*" multiple hidden />
               <div id="photoPreview" class="photo-preview"></div>
             </div>
+            -->
             <div class="field">
               <label for="txMemo">메모 <small class="muted">(선택)</small></label>
               <input type="text" id="txMemo" placeholder="예: 6월 클라이언트 A 용역비" autocomplete="off" />
             </div>
-            <button type="submit" class="btn-primary">기록 저장</button>
+            <button type="submit" class="btn-primary">저장</button>
             <p id="formMsg" class="form-msg" aria-live="polite"></p>
           </form>
+
+          <!-- 일정 추가 섹션 -->
+          <div id="inlineSchedSection">
+            <form id="inlineSchedForm" class="tx-form" novalidate>
+              <div class="field">
+                <label>구분</label>
+                <div class="seg" role="radiogroup" id="inSchedScopeSeg">
+                  <button type="button" class="seg-btn active" data-scope="business">💼 사업</button>
+                  <button type="button" class="seg-btn" data-scope="personal">🏠 개인</button>
+                </div>
+              </div>
+              <div class="field">
+                <label for="inSchedTitle">일정 제목</label>
+                <input type="text" id="inSchedTitle" placeholder="예: 세금 납부, 거래처 미팅" autocomplete="off" />
+              </div>
+              <div class="field">
+                <label for="inSchedDate">날짜</label>
+                <input type="date" id="inSchedDate" />
+              </div>
+              <div class="field">
+                <label>시간 <small class="muted">(선택)</small></label>
+                <div class="time-range">
+                  <input type="time" id="inSchedStartTime" />
+                  <span class="time-sep">~</span>
+                  <input type="time" id="inSchedEndTime" />
+                </div>
+              </div>
+              <div class="field">
+                <label for="inSchedMemo">메모 <small class="muted">(선택)</small></label>
+                <input type="text" id="inSchedMemo" placeholder="추가 메모" autocomplete="off" />
+              </div>
+              <div class="field">
+                <label>색상</label>
+                <div class="sched-colors" id="inSchedColors">
+                  <button type="button" class="sched-color-btn active" data-color="blue"   style="background:#3182F6"></button>
+                  <button type="button" class="sched-color-btn"        data-color="green"  style="background:#20C997"></button>
+                  <button type="button" class="sched-color-btn"        data-color="orange" style="background:#FF9500"></button>
+                  <button type="button" class="sched-color-btn"        data-color="red"    style="background:#F04452"></button>
+                  <button type="button" class="sched-color-btn"        data-color="purple" style="background:#7C5CFC"></button>
+                </div>
+              </div>
+              <button type="submit" class="btn-primary">저장</button>
+              <button type="button" id="inSchedDelete" class="btn-delete" hidden>일정 삭제</button>
+              <p id="inSchedMsg" class="form-msg" aria-live="polite"></p>
+            </form>
+          </div>
         </div>
       </div>
     </div>
@@ -162,6 +217,15 @@
         <button id="exportBtn" class="chip export">⤓ CSV 내보내기</button>
       </div>
       <div id="txList" class="tx-list"></div>
+    </section>
+
+    <!-- ─── 부가세 계산기 (메뉴에서 진입) ─── -->
+    <section id="view-vat" class="view">
+      <div class="section-head">
+        <h2>부가세 계산기</h2>
+        <p class="muted"><span id="vatViewMonthLabel">6월</span> 기준 · 사업 거래 추정</p>
+      </div>
+      <div id="vatViewContent"></div>
     </section>
 
     <!-- ─── 자산 관리 (메뉴에서 진입) ─── -->
@@ -235,11 +299,68 @@
       <button class="menu-item" data-view="dashboard"><span>📊</span> 대시보드</button>
       <button class="menu-item" data-view="add"><span>➕</span> 거래 입력</button>
       <button class="menu-item" data-view="list"><span>📑</span> 거래 내역</button>
+      <button class="menu-item" data-view="sched"><span>📅</span> 일정 등록</button>
       <div class="menu-divider"></div>
+      <button class="menu-item" data-view="vat"><span>🧾</span> 부가세 계산기</button>
       <button class="menu-item" data-view="assets"><span>💰</span> 자산 관리</button>
       <button class="menu-item" data-view="recurring"><span>🔁</span> 정기 거래 관리</button>
       <div class="menu-divider"></div>
       <button class="menu-item" id="logoutBtn"><span>🚪</span> 로그아웃</button>
+    </div>
+  </div>
+
+  <!-- ===== 일정 등록/수정 모달 ===== -->
+  <div id="schedOverlay" class="modal-overlay" hidden>
+    <div class="modal-sheet">
+      <div class="modal-grab"></div>
+      <div class="modal-head">
+        <strong id="schedModalTitle">일정 등록</strong>
+        <button type="button" id="schedClose" class="modal-close" aria-label="닫기">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="schedForm" class="tx-form" novalidate>
+          <div class="field">
+            <label>구분</label>
+            <div class="seg" role="radiogroup" id="schedScopeSeg">
+              <button type="button" class="seg-btn active" data-scope="business">💼 사업</button>
+              <button type="button" class="seg-btn" data-scope="personal">🏠 개인</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="schedTitle">일정 제목</label>
+            <input type="text" id="schedTitle" placeholder="예: 세금 납부, 거래처 미팅" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="schedDate">날짜</label>
+            <input type="date" id="schedDate" />
+          </div>
+          <div class="field">
+            <label>시간 <small class="muted">(선택)</small></label>
+            <div class="time-range">
+              <input type="time" id="schedStartTime" />
+              <span class="time-sep">~</span>
+              <input type="time" id="schedEndTime" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="schedMemo">메모 <small class="muted">(선택)</small></label>
+            <input type="text" id="schedMemo" placeholder="추가 메모" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label>색상</label>
+            <div class="sched-colors">
+              <button type="button" class="sched-color-btn active" data-color="blue" style="background:#3182F6"></button>
+              <button type="button" class="sched-color-btn" data-color="green" style="background:#20C997"></button>
+              <button type="button" class="sched-color-btn" data-color="orange" style="background:#FF9500"></button>
+              <button type="button" class="sched-color-btn" data-color="red" style="background:#F04452"></button>
+              <button type="button" class="sched-color-btn" data-color="purple" style="background:#7C5CFC"></button>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary">저장</button>
+          <button type="button" id="schedDelete" class="btn-delete" hidden>일정 삭제</button>
+          <p id="schedMsg" class="form-msg" aria-live="polite"></p>
+        </form>
+      </div>
     </div>
   </div>
 
