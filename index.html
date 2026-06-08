@@ -240,7 +240,7 @@
         <div id="assetBreakdown" class="cat-list"></div>
       </div>
       <div class="panel">
-        <h3>자산 추가</h3>
+        <h3 id="assetFormTitle">자산 추가</h3>
         <div class="asset-form">
           <div class="seg" id="assetKindSeg">
             <button type="button" class="seg-btn active" data-kind="asset">자산</button>
@@ -258,6 +258,7 @@
           </div>
           <input type="text" id="assetBalance" inputmode="numeric" placeholder="금액 (원)" autocomplete="off" />
           <button type="button" id="assetAddBtn" class="btn-primary">자산 추가</button>
+          <button type="button" id="assetCancelBtn" class="btn-secondary" hidden>취소</button>
         </div>
       </div>
       <div class="panel">

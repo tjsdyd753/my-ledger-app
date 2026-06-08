@@ -198,6 +198,14 @@ body {
 }
 .btn-primary:hover { background: var(--primary-2); }
 .btn-primary:active { transform: scale(.98); }
+.btn-secondary {
+  font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+  color: var(--text-2); background: var(--surface-2);
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 13px;
+  width: 100%; display: block; margin-top: 8px;
+  transition: background .15s ease;
+}
+.btn-secondary:hover { background: var(--border); }
 .form-msg { font-size: 13.5px; min-height: 18px; text-align: center; font-weight: 600; }
 .form-msg.ok { color: var(--primary); }
 .form-msg.err { color: var(--expense); }

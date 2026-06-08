@@ -217,6 +217,7 @@
   var inSchedColor = "blue";
   var inSchedScope = "business";
   var inSchedEditId = null;
+  var assetEditId = null;
 
   function switchInputMode(mode) {
     inInputMode = mode;
@@ -818,15 +819,41 @@
     if (!state.assets.length) { listBox.innerHTML = '<p class="empty">아래에서 자산을 추가해 보세요.</p>'; return; }
     listBox.innerHTML = state.assets.map(function (a) {
       var icon = a.kind === "liability" ? "💳" : "💰";
-      return '<div class="tx-item"><div class="tx-badge">' + icon + '</div><div class="tx-main"><div class="tx-cat">' + esc(a.name) + '</div><div class="tx-meta"><span class="scope-tag">' + esc(a.category) + '</span> · ' + (a.kind === "liability" ? "부채" : "자산") + '</div></div><div class="tx-amt ' + (a.kind === "liability" ? "expense" : "income") + '">' + won(a.balance) + '</div><button class="tx-del" data-id="' + a.id + '" aria-label="삭제">×</button></div>';
+      return '<div class="tx-item"><div class="tx-badge">' + icon + '</div><div class="tx-main"><div class="tx-cat">' + esc(a.name) + '</div><div class="tx-meta"><span class="scope-tag">' + esc(a.category) + '</span> · ' + (a.kind === "liability" ? "부채" : "자산") + '</div></div><div class="tx-amt ' + (a.kind === "liability" ? "expense" : "income") + '">' + won(a.balance) + '</div><button class="day-edit-btn" data-id="' + a.id + '" aria-label="수정">✏️</button><button class="tx-del" data-id="' + a.id + '" aria-label="삭제">×</button></div>';
     }).join("");
+    listBox.querySelectorAll(".day-edit-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var a = state.assets.filter(function (x) { return x.id === btn.dataset.id; })[0];
+        if (!a) return;
+        assetEditId = a.id;
+        document.querySelectorAll("#assetKindSeg .seg-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.kind === a.kind); });
+        state.assetKind = a.kind;
+        refreshAssetCategoryOptions();
+        $("assetName").value = a.name;
+        $("assetBalance").value = a.balance.toLocaleString("ko-KR");
+        setTimeout(function () { $("assetCategory").value = a.category; }, 0);
+        $("assetFormTitle").textContent = "자산 수정";
+        $("assetAddBtn").textContent = "수정 저장";
+        $("assetCancelBtn").hidden = false;
+        $("assetName").scrollIntoView({ behavior: "smooth", block: "center" });
+        $("assetName").focus();
+      });
+    });
     listBox.querySelectorAll(".tx-del").forEach(function (btn) {
       btn.addEventListener("click", function () {
         if (!confirm("이 자산을 삭제할까요?")) return;
         state.assets = state.assets.filter(function (a) { return a.id !== btn.dataset.id; });
+        if (assetEditId === btn.dataset.id) resetAssetForm();
         persist(); renderAssets();
       });
     });
+  }
+  function resetAssetForm() {
+    assetEditId = null;
+    $("assetName").value = ""; $("assetBalance").value = "";
+    $("assetFormTitle").textContent = "자산 추가";
+    $("assetAddBtn").textContent = "자산 추가";
+    $("assetCancelBtn").hidden = true;
   }
   function setupAssets() {
     document.querySelectorAll("#assetKindSeg .seg-btn").forEach(function (btn) {
@@ -850,11 +877,19 @@
       var name = $("assetName").value.trim(), bal = onlyNum($("assetBalance").value);
       if (!name) { alert("자산 이름을 입력해 주세요."); return; }
       if (!bal || bal <= 0) { alert("금액을 올바르게 입력해 주세요."); return; }
-      state.assets.push({ id: uid(), name: name, category: $("assetCategory").value, balance: bal, kind: state.assetKind });
-      persist();
-      $("assetName").value = ""; $("assetBalance").value = "";
-      renderAssets();
+      if (assetEditId) {
+        state.assets = state.assets.map(function (a) {
+          if (a.id !== assetEditId) return a;
+          return { id: a.id, name: name, category: $("assetCategory").value, balance: bal, kind: state.assetKind };
+        });
+        resetAssetForm();
+      } else {
+        state.assets.push({ id: uid(), name: name, category: $("assetCategory").value, balance: bal, kind: state.assetKind });
+        $("assetName").value = ""; $("assetBalance").value = "";
+      }
+      persist(); renderAssets();
     });
+    $("assetCancelBtn").addEventListener("click", resetAssetForm);
     refreshAssetCategoryOptions();
   }
 
