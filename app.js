@@ -1093,7 +1093,16 @@
 
   function renderAll() { renderMonthLabel(); renderDashboard(); renderList(); }
 
+  function hideSplash() {
+    var splash = $("splashScreen");
+    if (!splash) return;
+    splash.classList.add("splash-hide");
+    setTimeout(function () { if (splash.parentNode) splash.parentNode.removeChild(splash); }, 520);
+  }
+
   function init() {
+    // 2.2초 뒤 스플래시 페이드 아웃
+    setTimeout(hideSplash, 2200);
     document.querySelectorAll(".tab").forEach(function (t) { t.addEventListener("click", function () { switchView(t.dataset.view); }); });
     $("prevMonth").addEventListener("click", function () { changeMonth(-1); });
     $("nextMonth").addEventListener("click", function () { changeMonth(1); });
