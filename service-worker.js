@@ -4,9 +4,9 @@
    데이터(Firebase)는 SW를 거치지 않고 직접 서버와 통신합니다.
    ============================================================ */
 
-var CACHE_NAME = "hansohn-v1";
+// ★ 업데이트 배포 시 이 버전 번호를 올려주세요 (예: v3, v4...)
+var CACHE_NAME = "hansohn-v2";
 
-// 캐시할 파일 목록 (앱 껍데기)
 var STATIC_FILES = [
   "/my-ledger-app/",
   "/my-ledger-app/index.html",
@@ -24,10 +24,10 @@ self.addEventListener("install", function (e) {
       return cache.addAll(STATIC_FILES);
     })
   );
-  self.skipWaiting();   // 새 SW를 즉시 활성화
+  self.skipWaiting();
 });
 
-// ── 활성화: 오래된 캐시 정리 ──
+// ── 활성화: 이전 버전 캐시 전부 삭제 ──
 self.addEventListener("activate", function (e) {
   e.waitUntil(
     caches.keys().then(function (keys) {
@@ -44,27 +44,37 @@ self.addEventListener("activate", function (e) {
 self.addEventListener("fetch", function (e) {
   var url = e.request.url;
 
-  // Firebase·Google 관련 요청은 항상 네트워크 직통 (캐시 안 함)
+  // Firebase·Google 요청 → 항상 네트워크 직통
   if (url.includes("firebaseapp.com") ||
       url.includes("firebase.google.com") ||
       url.includes("googleapis.com") ||
       url.includes("gstatic.com") ||
-      url.includes("googleapis") ||
       url.includes("firestore.googleapis.com")) {
     return;
   }
 
-  // 정적 파일: 캐시 우선 → 없으면 네트워크
+  // HTML 파일 → 네트워크 우선 (항상 최신 버전), 오프라인 시 캐시 사용
+  if (e.request.mode === "navigate" || url.endsWith(".html") || url.endsWith("/")) {
+    e.respondWith(
+      fetch(e.request).then(function (response) {
+        var clone = response.clone();
+        caches.open(CACHE_NAME).then(function (cache) { cache.put(e.request, clone); });
+        return response;
+      }).catch(function () {
+        return caches.match(e.request);
+      })
+    );
+    return;
+  }
+
+  // CSS·JS·이미지 → 캐시 우선 (빠른 로딩), 없으면 네트워크 후 캐시 저장
   e.respondWith(
     caches.match(e.request).then(function (cached) {
       if (cached) return cached;
       return fetch(e.request).then(function (response) {
-        // 유효한 응답이면 캐시에도 저장
         if (response && response.status === 200 && response.type === "basic") {
           var clone = response.clone();
-          caches.open(CACHE_NAME).then(function (cache) {
-            cache.put(e.request, clone);
-          });
+          caches.open(CACHE_NAME).then(function (cache) { cache.put(e.request, clone); });
         }
         return response;
       });
