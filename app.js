@@ -483,9 +483,15 @@
     });
     box.querySelectorAll(".tx-del[data-id]").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        if (!confirm("이 거래를 삭제할까요?")) return;
-        state.transactions = state.transactions.filter(function (t) { return t.id !== btn.dataset.id; });
-        if (state.photos[btn.dataset.id]) { delete state.photos[btn.dataset.id]; savePhotos(); }
+        var delId = btn.dataset.id;
+        var delTx = state.transactions.filter(function (t) { return t.id === delId; })[0];
+        var msg = delTx && delTx.recurringId ? "이 거래를 삭제할까요?\n정기 거래 규칙도 함께 중지됩니다." : "이 거래를 삭제할까요?";
+        if (!confirm(msg)) return;
+        state.transactions = state.transactions.filter(function (t) { return t.id !== delId; });
+        if (state.photos[delId]) { delete state.photos[delId]; savePhotos(); }
+        if (delTx && delTx.recurringId) {
+          state.recurring = state.recurring.filter(function (r) { return r.id !== delTx.recurringId; });
+        }
         persist(); renderAll();
       });
     });
@@ -738,9 +744,15 @@
     });
     box.querySelectorAll(".tx-del").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        if (!confirm("이 거래를 삭제할까요?")) return;
-        state.transactions = state.transactions.filter(function (t) { return t.id !== btn.dataset.id; });
-        if (state.photos[btn.dataset.id]) { delete state.photos[btn.dataset.id]; savePhotos(); }
+        var delId = btn.dataset.id;
+        var delTx = state.transactions.filter(function (t) { return t.id === delId; })[0];
+        var msg = delTx && delTx.recurringId ? "이 거래를 삭제할까요?\n정기 거래 규칙도 함께 중지됩니다." : "이 거래를 삭제할까요?";
+        if (!confirm(msg)) return;
+        state.transactions = state.transactions.filter(function (t) { return t.id !== delId; });
+        if (state.photos[delId]) { delete state.photos[delId]; savePhotos(); }
+        if (delTx && delTx.recurringId) {
+          state.recurring = state.recurring.filter(function (r) { return r.id !== delTx.recurringId; });
+        }
         persist(); renderAll();
       });
     });
