@@ -380,7 +380,35 @@
     $("legendExpense").textContent = isBiz ? "비용" : "지출";
     $("catTitle").innerHTML = (isBiz ? "비용 카테고리" : "지출 카테고리") + ' <small class="muted">(많이 쓴 순)</small>';
     var t = scopeTotals(scope);
-    renderKPI(scope, t); renderTrend(scope); renderCategory(scope); renderVatPanel(); renderCalendar(scope); renderDayDetail(scope);
+    renderTodaySchedule(scope); renderKPI(scope, t); renderTrend(scope); renderCategory(scope); renderVatPanel(); renderCalendar(scope); renderDayDetail(scope);
+  }
+  function renderTodaySchedule(scope) {
+    var panel = $("todaySchedPanel");
+    var td = new Date(), todayKey = todayStr();
+    var scheds = state.schedules.filter(function(s) {
+      return s.date === todayKey && (s.scope || "business") === scope;
+    }).sort(function(a, b) {
+      if (!a.startTime && !b.startTime) return 0;
+      if (!a.startTime) return 1;
+      if (!b.startTime) return -1;
+      return a.startTime.localeCompare(b.startTime);
+    });
+    var dateLabel = (td.getMonth() + 1) + "월 " + td.getDate() + "일";
+    var head = '<div class="today-sched-head"><span class="today-sched-title">📅 오늘 일정</span><span class="today-sched-date">' + dateLabel + '</span></div>';
+    if (!scheds.length) {
+      panel.innerHTML = head + '<p class="today-sched-empty">오늘 등록된 일정이 없습니다</p>';
+      return;
+    }
+    var items = scheds.map(function(s) {
+      var timeStr = s.startTime ? (s.startTime + (s.endTime ? " ~ " + s.endTime : "")) : "";
+      return '<div class="today-sched-item">' +
+        '<span class="today-sched-dot" style="background:' + schedColor(s.color) + '"></span>' +
+        (timeStr ? '<span class="today-sched-time">' + timeStr + '</span>' : '') +
+        '<span class="today-sched-name">' + esc(s.title) + '</span>' +
+        (s.memo ? '<span class="today-sched-memo">· ' + esc(s.memo) + '</span>' : '') +
+        '</div>';
+    }).join("");
+    panel.innerHTML = head + '<div class="today-sched-list">' + items + '</div>';
   }
   function renderKPI(scope, t) {
     var isBiz = scope === "business";

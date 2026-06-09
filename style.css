@@ -83,6 +83,31 @@ body {
 .section-head .muted { font-size: 14px; margin-top: 4px; }
 .muted { color: var(--muted); }
 
+/* ---------- 오늘 일정 패널 ---------- */
+.today-sched-panel {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow);
+  margin-bottom: 12px;
+}
+.today-sched-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px;
+}
+.today-sched-title { font-size: 13px; font-weight: 700; color: var(--ink); }
+.today-sched-date { font-size: 12px; color: var(--muted); }
+.today-sched-empty { font-size: 13px; color: var(--muted); text-align: center; padding: 2px 0 0; }
+.today-sched-list { display: flex; flex-direction: column; gap: 7px; }
+.today-sched-item {
+  display: flex; align-items: center; gap: 8px; font-size: 14px;
+  overflow: hidden;
+}
+.today-sched-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.today-sched-time { font-size: 12px; font-weight: 600; color: var(--primary); flex: none; }
+.today-sched-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.today-sched-memo { font-size: 12px; color: var(--muted); flex: none; }
+
 /* ---------- KPI 카드 ---------- */
 .kpi-grid {
   display: grid; gap: 12px;
