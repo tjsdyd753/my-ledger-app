@@ -243,6 +243,19 @@
     document.querySelectorAll("#inputModeSeg .seg-btn").forEach(function (b) {
       b.classList.toggle("active", b.dataset.imode === mode);
     });
+    // 탭 전환 시 구분(scope) 값 동기화
+    if (mode === "sched") {
+      inSchedScope = state.form.scope;
+      document.querySelectorAll("#inSchedScopeSeg .seg-btn").forEach(function (b) {
+        b.classList.toggle("active", b.dataset.scope === inSchedScope);
+      });
+    } else if (mode === "tx") {
+      state.form.scope = inSchedScope;
+      document.querySelectorAll(".seg-btn[data-scope]").forEach(function (b) {
+        b.classList.toggle("active", b.dataset.scope === state.form.scope);
+      });
+      refreshCategoryOptions();
+    }
   }
 
   function resetInlineSchedForm() {
