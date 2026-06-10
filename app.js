@@ -1,4 +1,4 @@
-/* ============================================
+﻿/* ============================================
    한손 · app.js  (순수 JavaScript, 빌드 불필요)
    데이터는 브라우저 localStorage에 저장됩니다.
    ============================================ */
@@ -128,6 +128,7 @@
     if (name === "recurring") renderRecurring();
     if (name === "vat") renderVatView();
     if (name === "salary") renderSalary();
+    if (name === "fincalc") renderFinCalc();
     updateFab();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -226,7 +227,7 @@
   }
   // 입력 화면이거나 메뉴가 열려 있으면 입력 버튼을 숨깁니다
   function updateFab() {
-    var noFab = ["assets", "recurring", "vat", "salary"];
+    var noFab = ["assets", "recurring", "vat", "salary", "fincalc"];
     $("fab").hidden = state.menuOpen || state.inputOpen || noFab.indexOf(state.currentView) !== -1;
   }
   var inInputMode = "tx";
@@ -1319,4 +1320,241 @@
     // 클라우드 모드일 때는 로그인 후 loadCloud()에서 데이터를 불러와 렌더합니다.
   }
   document.addEventListener("DOMContentLoaded", init);
+
+  /* ================= 금융 계산기 ================= */
+  var _fcReady = false;
+  function renderFinCalc() {
+    if (_fcReady) return;
+    _fcReady = true;
+    // 탭 전환
+    document.querySelectorAll(".fc-tab").forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        document.querySelectorAll(".fc-tab").forEach(function (t) { t.classList.remove("active"); });
+        document.querySelectorAll(".fc-panel").forEach(function (p) { p.hidden = true; });
+        tab.classList.add("active");
+        var panel = document.getElementById("fc-" + tab.dataset.calc);
+        if (panel) panel.hidden = false;
+      });
+    });
+    // 소형 세그먼트 (년/월, 단리/월복리)
+    fcSetupSeg("dep-period-seg", function (btn) {
+      var lbl = document.getElementById("dep-period-lbl");
+      if (lbl) lbl.textContent = btn.dataset.unit === "year" ? "년" : "개월";
+    });
+    fcSetupSeg("sav-period-seg", function (btn) {
+      var lbl = document.getElementById("sav-period-lbl");
+      if (lbl) lbl.textContent = btn.dataset.unit === "year" ? "년" : "개월";
+    });
+    fcSetupSeg("loan-period-seg", function (btn) {
+      var lbl = document.getElementById("loan-period-lbl");
+      if (lbl) lbl.textContent = btn.dataset.unit === "year" ? "년" : "개월";
+    });
+    fcSetupSeg("dep-type-seg");
+    fcSetupSeg("sav-type-seg");
+    fcSetupSeg("dep-tax-seg");
+    fcSetupSeg("sav-tax-seg");
+    fcSetupSeg("loan-method-seg");
+    // 금액 입력 → 천단위 콤마
+    ["dep-amount", "sav-amount", "loan-amount", "pre-amount"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("input", function () {
+        var raw = el.value.replace(/[^0-9]/g, "");
+        var cur = el.selectionStart, prevLen = el.value.length;
+        el.value = raw ? Number(raw).toLocaleString("ko-KR") : "";
+        el.selectionStart = el.selectionEnd = cur + (el.value.length - prevLen);
+      });
+    });
+    // 계산 버튼
+    document.getElementById("dep-calc").addEventListener("click", fcCalcDeposit);
+    document.getElementById("sav-calc").addEventListener("click", fcCalcSaving);
+    document.getElementById("loan-calc").addEventListener("click", fcCalcLoan);
+    document.getElementById("pre-calc").addEventListener("click", fcCalcPrepay);
+    // 초기화 버튼
+    document.querySelectorAll(".fc-btn-reset").forEach(function (btn) {
+      btn.addEventListener("click", function () { fcReset(btn.dataset.panel); });
+    });
+  }
+  function fcSetupSeg(id, onChange) {
+    var seg = document.getElementById(id);
+    if (!seg) return;
+    seg.querySelectorAll(".fc-seg-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        seg.querySelectorAll(".fc-seg-btn").forEach(function (b) { b.classList.remove("active"); });
+        btn.classList.add("active");
+        if (onChange) onChange(btn);
+      });
+    });
+  }
+  function fcSegVal(id, attr) {
+    var seg = document.getElementById(id);
+    if (!seg) return null;
+    var active = seg.querySelector(".fc-seg-btn.active");
+    return active ? active.dataset[attr] : null;
+  }
+  function fcAmt(id) { var el = document.getElementById(id); return parseInt(el ? (el.value.replace(/[^0-9]/g, "") || "0") : "0", 10); }
+  function fcNum(id) { return parseFloat((document.getElementById(id) || {}).value || "0") || 0; }
+  function fcReset(panelId) {
+    var panel = document.getElementById(panelId);
+    if (!panel) return;
+    panel.querySelectorAll("input").forEach(function (inp) { inp.value = ""; });
+    panel.querySelectorAll(".fc-seg-sm, .fc-seg-full").forEach(function (seg) {
+      seg.querySelectorAll(".fc-seg-btn").forEach(function (b, i) { b.classList.toggle("active", i === 0); });
+    });
+    var labels = { "dep-period-lbl": "년", "sav-period-lbl": "년", "loan-period-lbl": "년" };
+    Object.keys(labels).forEach(function (k) { var el = document.getElementById(k); if (el) el.textContent = labels[k]; });
+    var res = panel.querySelector(".fc-result");
+    if (res) res.hidden = true;
+  }
+  function fcShowResult(id, rows) {
+    var box = document.getElementById(id);
+    if (!box) return;
+    box.hidden = false;
+    box.innerHTML = '<div class="fc-result-grid">' + rows.map(function (r) {
+      var cls = r.cls === "highlight" ? " fc-res-highlight" : r.cls === "income" ? " fc-res-income" : r.cls === "expense" ? " fc-res-expense" : r.cls === "muted" ? " fc-res-muted" : "";
+      return '<div class="fc-res-row"><span class="fc-res-label">' + r.label + '</span><span class="fc-res-value' + cls + '">' + r.value + '</span></div>';
+    }).join("") + '</div>';
+  }
+  function fcShowError(id, msg) {
+    var box = document.getElementById(id);
+    if (!box) return;
+    box.hidden = false;
+    box.innerHTML = '<p class="fc-error">' + msg + '</p>';
+  }
+  // ── 예금 계산 ──
+  function fcCalcDeposit() {
+    var p = fcAmt("dep-amount"), period = fcNum("dep-period"), rate = fcNum("dep-rate") / 100;
+    if (!p || !period || !rate) { fcShowError("dep-result", "금액, 기간, 이자율을 모두 입력해 주세요."); return; }
+    var unit = fcSegVal("dep-period-seg", "unit") || "year";
+    var rtype = fcSegVal("dep-type-seg", "rtype") || "simple";
+    var taxRate = parseFloat(fcSegVal("dep-tax-seg", "tax") || "0.154");
+    var months = unit === "year" ? period * 12 : period;
+    var years = months / 12;
+    var interest;
+    if (rtype === "simple") {
+      interest = Math.round(p * rate * years);
+    } else {
+      var mr = rate / 12;
+      interest = Math.round(p * Math.pow(1 + mr, months)) - p;
+    }
+    var taxAmt = Math.round(interest * taxRate);
+    var netInterest = interest - taxAmt;
+    fcShowResult("dep-result", [
+      { label: "예치금액", value: won(p) },
+      { label: "세전이자", value: won(interest), cls: "income" },
+      { label: "이자과세 (" + (taxRate * 100).toFixed(1) + "%)", value: taxAmt ? "-" + won(taxAmt) : "₩0", cls: taxAmt ? "expense" : "" },
+      { label: "세후이자", value: won(netInterest), cls: "income" },
+      { label: "만기수령액", value: won(p + netInterest), cls: "highlight" }
+    ]);
+  }
+  // ── 적금 계산 ──
+  function fcCalcSaving() {
+    var monthly = fcAmt("sav-amount"), period = fcNum("sav-period"), rate = fcNum("sav-rate") / 100;
+    if (!monthly || !period || !rate) { fcShowError("sav-result", "금액, 기간, 이자율을 모두 입력해 주세요."); return; }
+    var unit = fcSegVal("sav-period-seg", "unit") || "year";
+    var rtype = fcSegVal("sav-type-seg", "rtype") || "simple";
+    var taxRate = parseFloat(fcSegVal("sav-tax-seg", "tax") || "0.154");
+    var n = Math.round(unit === "year" ? period * 12 : period);
+    var principal = monthly * n;
+    var interest;
+    if (rtype === "simple") {
+      // 단리: 각 납입액이 각각 다른 기간동안 이자 적립
+      interest = Math.round(monthly * (rate / 12) * (n * (n + 1) / 2));
+    } else {
+      var mr = rate / 12;
+      var maturity = Math.round(monthly * (Math.pow(1 + mr, n) - 1) / mr * (1 + mr));
+      interest = maturity - principal;
+    }
+    var taxAmt = Math.round(interest * taxRate);
+    var netInterest = interest - taxAmt;
+    fcShowResult("sav-result", [
+      { label: "납입원금", value: won(principal) },
+      { label: "세전이자", value: won(interest), cls: "income" },
+      { label: "이자과세 (" + (taxRate * 100).toFixed(1) + "%)", value: taxAmt ? "-" + won(taxAmt) : "₩0", cls: taxAmt ? "expense" : "" },
+      { label: "세후이자", value: won(netInterest), cls: "income" },
+      { label: "만기수령액", value: won(principal + netInterest), cls: "highlight" }
+    ]);
+  }
+  // ── 대출 계산 ──
+  function fcCalcLoan() {
+    var p = fcAmt("loan-amount"), period = fcNum("loan-period"), rate = fcNum("loan-rate") / 100;
+    if (!p || !period || !rate) { fcShowError("loan-result", "금액, 기간, 금리를 모두 입력해 주세요."); return; }
+    var unit = fcSegVal("loan-period-seg", "unit") || "year";
+    var method = fcSegVal("loan-method-seg", "method") || "equal-payment";
+    var n = Math.round(unit === "year" ? period * 12 : period);
+    var mr = rate / 12;
+    if (method === "equal-payment") {
+      // 원리금균등
+      var mp = Math.round(p * mr * Math.pow(1 + mr, n) / (Math.pow(1 + mr, n) - 1));
+      var total = mp * n;
+      fcShowResult("loan-result", [
+        { label: "대출금액", value: won(p) },
+        { label: "월 상환액", value: won(mp) },
+        { label: "총 상환금액", value: won(total) },
+        { label: "총 이자", value: won(total - p), cls: "expense" }
+      ]);
+    } else if (method === "equal-principal") {
+      // 원금균등
+      var mprincipal = Math.round(p / n);
+      var firstPayment = mprincipal + Math.round(p * mr);
+      var lastPayment = mprincipal + Math.round((p - mprincipal * (n - 1)) * mr);
+      var totalInterest = Math.round(p * mr * (n + 1) / 2);
+      fcShowResult("loan-result", [
+        { label: "대출금액", value: won(p) },
+        { label: "첫 달 상환액", value: won(firstPayment) },
+        { label: "마지막 달 상환액", value: won(lastPayment) },
+        { label: "총 상환금액", value: won(p + totalInterest) },
+        { label: "총 이자", value: won(totalInterest), cls: "expense" }
+      ]);
+    } else {
+      // 만기일시
+      var monthlyInterest = Math.round(p * mr);
+      var totalInterestBullet = Math.round(p * rate * (n / 12));
+      fcShowResult("loan-result", [
+        { label: "대출금액", value: won(p) },
+        { label: "매월 이자", value: won(monthlyInterest) },
+        { label: "만기 원금 상환", value: won(p) },
+        { label: "총 이자", value: won(totalInterestBullet), cls: "expense" },
+        { label: "총 납부액", value: won(p + totalInterestBullet), cls: "highlight" }
+      ]);
+    }
+  }
+  // ── 중도상환수수료 계산 ──
+  function fcCalcPrepay() {
+    var amount = fcAmt("pre-amount"), feeRate = fcNum("pre-rate") / 100;
+    var startStr = (document.getElementById("pre-start") || {}).value;
+    var repayStr = (document.getElementById("pre-repay") || {}).value;
+    var endStr = (document.getElementById("pre-end") || {}).value;
+    var exemptYears = fcNum("pre-exempt");
+    if (!amount || !feeRate || !startStr || !repayStr || !endStr) {
+      fcShowError("pre-result", "모든 항목을 입력해 주세요."); return;
+    }
+    var startD = new Date(startStr), repayD = new Date(repayStr), endD = new Date(endStr);
+    if (repayD <= startD || endD <= repayD) {
+      fcShowError("pre-result", "날짜 순서를 확인해 주세요. (대출일 < 상환일 < 상환기일)"); return;
+    }
+    var MS = 1000 * 3600 * 24;
+    var totalDays = Math.round((endD - startD) / MS);
+    var elapsedDays = Math.round((repayD - startD) / MS);
+    var remainDays = totalDays - elapsedDays;
+    // 면제기간 확인
+    if (exemptYears > 0 && elapsedDays <= Math.round(exemptYears * 365)) {
+      fcShowResult("pre-result", [
+        { label: "상환금액", value: won(amount) },
+        { label: "경과일수", value: elapsedDays + "일" },
+        { label: "면제기간", value: exemptYears + "년 이내" },
+        { label: "중도상환수수료", value: "₩0", cls: "income" }
+      ]);
+      return;
+    }
+    var fee = Math.round(amount * feeRate * (remainDays / totalDays));
+    fcShowResult("pre-result", [
+      { label: "상환금액", value: won(amount) },
+      { label: "잔여일수", value: remainDays + "일" },
+      { label: "총 대출기간", value: totalDays + "일" },
+      { label: "중도상환수수료", value: won(fee), cls: "expense" }
+    ]);
+  }
+
 })();
+

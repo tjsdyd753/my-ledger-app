@@ -883,3 +883,114 @@ body { padding-bottom: 36px; }
 .vat-month-due.positive { color: var(--expense); }
 .vat-month-due.negative { color: var(--income); }
 
+/* ============================================
+   금융 계산기
+   ============================================ */
+.fc-container { padding: 0; overflow: hidden; }
+
+/* 탭 */
+.fc-tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid var(--line);
+  padding: 0 4px;
+  scrollbar-width: none;
+}
+.fc-tabs::-webkit-scrollbar { display: none; }
+.fc-tab {
+  flex: none; padding: 14px 16px;
+  font-family: inherit; font-size: 14px; font-weight: 600; color: var(--muted);
+  background: transparent; border: none; cursor: pointer;
+  border-bottom: 2.5px solid transparent; margin-bottom: -1px;
+  white-space: nowrap; transition: color .15s, border-color .15s;
+}
+.fc-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+.fc-tab:active { color: var(--primary-2); }
+
+/* 패널 공통 */
+.fc-panel { padding: 20px 20px 4px; }
+
+/* 설명 박스 */
+.fc-desc {
+  background: var(--bg); border-radius: var(--radius-sm);
+  padding: 14px 16px; margin-bottom: 20px;
+}
+.fc-desc strong { font-size: 14.5px; font-weight: 700; display: block; margin-bottom: 5px; }
+.fc-desc p { font-size: 13px; color: var(--muted); line-height: 1.55; margin: 0; }
+
+/* 입력 필드 행 */
+.fc-field {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 0; border-bottom: 1px solid var(--line); gap: 10px;
+}
+.fc-field:last-of-type { border-bottom: none; }
+.fc-field-col { flex-direction: column; align-items: flex-start; gap: 10px; }
+.fc-label { font-size: 14px; font-weight: 600; color: var(--ink); flex-shrink: 0; }
+.fc-input-wrap { display: flex; align-items: center; gap: 6px; flex: 1; justify-content: flex-end; }
+.fc-field-col .fc-input-wrap { width: 100%; flex: none; }
+
+.fc-input {
+  background: transparent; border: none; outline: none;
+  font-family: inherit; font-size: 15px; font-weight: 600; color: var(--ink);
+  text-align: right; min-width: 0; flex: 1;
+}
+.fc-input-sm { flex: none; width: 72px; }
+.fc-input-date { flex: none; width: 140px; font-size: 14px; color: var(--ink); }
+.fc-input::placeholder { color: var(--muted); font-weight: 400; }
+.fc-unit { font-size: 14px; color: var(--muted); font-weight: 500; flex-shrink: 0; }
+
+/* 소형 세그먼트 (년/월, 단리/월복리) */
+.fc-seg-sm {
+  display: flex; gap: 3px; background: var(--bg); padding: 3px; border-radius: 9px; flex-shrink: 0;
+}
+.fc-seg-sm .fc-seg-btn {
+  padding: 5px 10px; font-size: 13px; font-weight: 600;
+  border: none; border-radius: 7px; cursor: pointer;
+  background: transparent; color: var(--muted); font-family: inherit;
+  transition: all .15s ease;
+}
+.fc-seg-sm .fc-seg-btn.active {
+  background: #fff; color: var(--primary);
+  box-shadow: 0 1px 3px rgba(0,0,0,.12);
+}
+
+/* 전체 너비 세그먼트 (이자과세, 상환방법) */
+.fc-seg-full { display: flex; gap: 6px; width: 100%; }
+.fc-seg-full .fc-seg-btn {
+  flex: 1; padding: 10px 6px; font-size: 13px; font-weight: 600; text-align: center;
+  border: 1.5px solid var(--line); border-radius: 10px; cursor: pointer;
+  background: transparent; color: var(--muted); font-family: inherit;
+  transition: all .15s ease;
+}
+.fc-seg-full .fc-seg-btn.active {
+  background: var(--primary-soft); color: var(--primary); border-color: var(--primary);
+}
+
+/* 버튼 영역 */
+.fc-actions { display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px; margin: 22px 0 20px; }
+.fc-btn-reset {
+  font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer; padding: 14px;
+  color: var(--ink-2); background: transparent; border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm); transition: background .15s;
+}
+.fc-btn-reset:active { background: var(--bg); }
+.fc-btn-calc {
+  font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; padding: 14px;
+  color: #fff; background: var(--primary); border: none; border-radius: var(--radius-sm);
+}
+.fc-btn-calc:active { background: var(--primary-2); }
+
+/* 결과 영역 */
+.fc-result { margin: 0 -20px 0; border-top: 1px solid var(--line); }
+.fc-result-grid { }
+.fc-res-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 20px; border-bottom: 1px solid var(--line);
+}
+.fc-res-row:last-child { border-bottom: none; }
+.fc-res-label { font-size: 14px; color: var(--ink-2); font-weight: 500; }
+.fc-res-value { font-size: 15px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.fc-res-income { color: var(--income); }
+.fc-res-expense { color: var(--expense); }
+.fc-res-highlight { font-size: 17px; color: var(--primary); }
+.fc-res-muted { font-size: 13px; color: var(--muted); font-weight: 500; }
+.fc-error { font-size: 14px; color: var(--expense); padding: 14px 20px; text-align: center; }

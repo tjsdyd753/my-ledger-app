@@ -293,6 +293,209 @@
       </div>
     </section>
 
+    <!-- ─── 금융 계산기 (메뉴에서 진입) ─── -->
+    <section id="view-fincalc" class="view">
+      <div class="section-head">
+        <h2>금융 계산기</h2>
+        <p class="muted">예금·적금·대출 이자를 미리 계산해보세요.</p>
+      </div>
+      <div class="panel fc-container">
+        <!-- 탭 -->
+        <div class="fc-tabs">
+          <button class="fc-tab active" data-calc="deposit">예금</button>
+          <button class="fc-tab" data-calc="saving">적금</button>
+          <button class="fc-tab" data-calc="loan">대출</button>
+          <button class="fc-tab" data-calc="prepay">중도상환수수료</button>
+        </div>
+
+        <!-- ─ 예금 ─ -->
+        <div id="fc-deposit" class="fc-panel">
+          <div class="fc-desc">
+            <strong>예금 계산기</strong>
+            <p>일정 금액을 한번에 납입하는 정기예금입니다. 원하시는 계산 방식을 선택해 주세요.</p>
+          </div>
+          <div class="fc-field">
+            <span class="fc-label">예치금액</span>
+            <div class="fc-input-wrap">
+              <input type="text" class="fc-input" id="dep-amount" inputmode="numeric" placeholder="0" autocomplete="off" /><span class="fc-unit">원</span>
+            </div>
+          </div>
+          <div class="fc-field">
+            <span class="fc-label">예금기간</span>
+            <div class="fc-input-wrap">
+              <div class="fc-seg-sm" id="dep-period-seg">
+                <button type="button" class="fc-seg-btn active" data-unit="year">년</button>
+                <button type="button" class="fc-seg-btn" data-unit="month">월</button>
+              </div>
+              <input type="text" class="fc-input fc-input-sm" id="dep-period" inputmode="numeric" placeholder="0" autocomplete="off" /><span class="fc-unit" id="dep-period-lbl">년</span>
+            </div>
+          </div>
+          <div class="fc-field">
+            <span class="fc-label">연이자율</span>
+            <div class="fc-input-wrap">
+              <div class="fc-seg-sm" id="dep-type-seg">
+                <button type="button" class="fc-seg-btn active" data-rtype="simple">단리</button>
+                <button type="button" class="fc-seg-btn" data-rtype="compound">월복리</button>
+              </div>
+              <input type="text" class="fc-input fc-input-sm" id="dep-rate" inputmode="decimal" placeholder="0" autocomplete="off" /><span class="fc-unit">%</span>
+            </div>
+          </div>
+          <div class="fc-field fc-field-col">
+            <span class="fc-label">이자과세</span>
+            <div class="fc-seg-full" id="dep-tax-seg">
+              <button type="button" class="fc-seg-btn active" data-tax="0.154">일반과세</button>
+              <button type="button" class="fc-seg-btn" data-tax="0">비과세</button>
+              <button type="button" class="fc-seg-btn" data-tax="0.099">세금우대</button>
+            </div>
+          </div>
+          <div class="fc-actions">
+            <button type="button" class="fc-btn-reset" data-panel="fc-deposit">↺ 초기화</button>
+            <button type="button" class="fc-btn-calc" id="dep-calc">계산하기</button>
+          </div>
+          <div id="dep-result" class="fc-result" hidden></div>
+        </div>
+
+        <!-- ─ 적금 ─ -->
+        <div id="fc-saving" class="fc-panel" hidden>
+          <div class="fc-desc">
+            <strong>적금 계산기</strong>
+            <p>매월 일정 금액을 납입하는 적금입니다. 원하시는 계산 방식을 선택해 주세요.</p>
+          </div>
+          <div class="fc-field">
+            <span class="fc-label">월 납입금액</span>
+            <div class="fc-input-wrap">
+              <input type="text" class="fc-input" id="sav-amount" inputmode="numeric" placeholder="0" autocomplete="off" /><span class="fc-unit">원</span>
+            </div>
+          </div>
+          <div class="fc-field">
+            <span class="fc-label">적금기간</span>
+            <div class="fc-input-wrap">
+              <div class="fc-seg-sm" id="sav-period-seg">
+                <button type="button" class="fc-seg-btn active" data-unit="year">년</button>
+                <button type="button" class="fc-seg-btn" data-unit="month">월</button>
+              </div>
+              <input type="text" class="fc-input fc-input-sm" id="sav-period" inputmode="numeric" placeholder="0" autocomplete="off" /><span class="fc-unit" id="sav-period-lbl">년</span>
+            </div>
+          </div>
+          <div class="fc-field">
+            <span class="fc-label">연이자율</span>
+            <div class="fc-input-wrap">
+              <div class="fc-seg-sm" id="sav-type-seg">
+                <button type="button" class="fc-seg-btn active" data-rtype="simple">단리</button>
+                <button type="button" class="fc-seg-btn" data-rtype="compound">월복리</button>
+              </div>
+              <input type="text" class="fc-input fc-input-sm" id="sav-rate" inputmode="decimal" placeholder="0" autocomplete="off" /><span class="fc-unit">%</span>
+            </div>
+          </div>
+          <div class="fc-field fc-field-col">
+            <span class="fc-label">이자과세</span>
+            <div class="fc-seg-full" id="sav-tax-seg">
+              <button type="button" class="fc-seg-btn active" data-tax="0.154">일반과세</button>
+              <button type="button" class="fc-seg-btn" data-tax="0">비과세</button>
+              <button type="button" class="fc-seg-btn" data-tax="0.099">세금우대</button>
+            </div>
+          </div>
+          <div class="fc-actions">
+            <button type="button" class="fc-btn-reset" data-panel="fc-saving">↺ 초기화</button>
+            <button type="button" class="fc-btn-calc" id="sav-calc">계산하기</button>
+          </div>
+          <div id="sav-result" class="fc-result" hidden></div>
+        </div>
+
+        <!-- ─ 대출 ─ -->
+        <div id="fc-loan" class="fc-panel" hidden>
+          <div class="fc-desc">
+            <strong>대출 계산기</strong>
+            <p>매월 얼마씩 갚아야 하는지, 대출 기간 동안 총 상환 금액과 대출 이자는 얼마인지 확인해 보세요.</p>
+          </div>
+          <div class="fc-field">
+            <span class="fc-label">대출금액</span>
+            <div class="fc-input-wrap">
+              <input type="text" class="fc-input" id="loan-amount" inputmode="numeric" placeholder="0" autocomplete="off" /><span class="fc-unit">원</span>
+            </div>
+          </div>
+          <div class="fc-field">
+            <span class="fc-label">대출기간</span>
+            <div class="fc-input-wrap">
+              <div class="fc-seg-sm" id="loan-period-seg">
+                <button type="button" class="fc-seg-btn active" data-unit="year">년</button>
+                <button type="button" class="fc-seg-btn" data-unit="month">월</button>
+              </div>
+              <input type="text" class="fc-input fc-input-sm" id="loan-period" inputmode="numeric" placeholder="0" autocomplete="off" /><span class="fc-unit" id="loan-period-lbl">년</span>
+            </div>
+          </div>
+          <div class="fc-field">
+            <span class="fc-label">대출금리</span>
+            <div class="fc-input-wrap">
+              <input type="text" class="fc-input fc-input-sm" id="loan-rate" inputmode="decimal" placeholder="0" autocomplete="off" /><span class="fc-unit">%</span>
+            </div>
+          </div>
+          <div class="fc-field fc-field-col">
+            <span class="fc-label">상환방법</span>
+            <div class="fc-seg-full" id="loan-method-seg">
+              <button type="button" class="fc-seg-btn active" data-method="equal-payment">원리금균등</button>
+              <button type="button" class="fc-seg-btn" data-method="equal-principal">원금균등</button>
+              <button type="button" class="fc-seg-btn" data-method="bullet">만기일시</button>
+            </div>
+          </div>
+          <div class="fc-actions">
+            <button type="button" class="fc-btn-reset" data-panel="fc-loan">↺ 초기화</button>
+            <button type="button" class="fc-btn-calc" id="loan-calc">계산하기</button>
+          </div>
+          <div id="loan-result" class="fc-result" hidden></div>
+        </div>
+
+        <!-- ─ 중도상환수수료 ─ -->
+        <div id="fc-prepay" class="fc-panel" hidden>
+          <div class="fc-desc">
+            <strong>중도상환수수료 계산기</strong>
+            <p>약속한 기일보다 일찍 상환하는 경우 금융 기관에 내는 수수료입니다. 얼마나 내야하는지 계산해 보세요.</p>
+          </div>
+          <div class="fc-field">
+            <span class="fc-label">상환금액</span>
+            <div class="fc-input-wrap">
+              <input type="text" class="fc-input" id="pre-amount" inputmode="numeric" placeholder="0" autocomplete="off" /><span class="fc-unit">원</span>
+            </div>
+          </div>
+          <div class="fc-field">
+            <span class="fc-label">수수료율</span>
+            <div class="fc-input-wrap">
+              <input type="text" class="fc-input fc-input-sm" id="pre-rate" inputmode="decimal" placeholder="0" autocomplete="off" /><span class="fc-unit">%</span>
+            </div>
+          </div>
+          <div class="fc-field">
+            <span class="fc-label">대출일자</span>
+            <div class="fc-input-wrap">
+              <input type="date" class="fc-input fc-input-date" id="pre-start" />
+            </div>
+          </div>
+          <div class="fc-field">
+            <span class="fc-label">상환일자</span>
+            <div class="fc-input-wrap">
+              <input type="date" class="fc-input fc-input-date" id="pre-repay" />
+            </div>
+          </div>
+          <div class="fc-field">
+            <span class="fc-label">상환기일</span>
+            <div class="fc-input-wrap">
+              <input type="date" class="fc-input fc-input-date" id="pre-end" />
+            </div>
+          </div>
+          <div class="fc-field">
+            <span class="fc-label">면제기간</span>
+            <div class="fc-input-wrap">
+              <input type="text" class="fc-input fc-input-sm" id="pre-exempt" inputmode="numeric" placeholder="0" autocomplete="off" /><span class="fc-unit">년</span>
+            </div>
+          </div>
+          <div class="fc-actions">
+            <button type="button" class="fc-btn-reset" data-panel="fc-prepay">↺ 초기화</button>
+            <button type="button" class="fc-btn-calc" id="pre-calc">계산하기</button>
+          </div>
+          <div id="pre-result" class="fc-result" hidden></div>
+        </div>
+      </div>
+    </section>
+
     <!-- ─── 월급 배분표 (메뉴에서 진입) ─── -->
     <section id="view-salary" class="view">
       <div class="section-head">
@@ -338,6 +541,7 @@
       <div class="menu-divider"></div>
       <button class="menu-item" data-view="salary"><span>💵</span> 월급 배분표</button>
       <button class="menu-item" data-view="vat"><span>🧾</span> 부가세 계산기</button>
+      <button class="menu-item" data-view="fincalc"><span>🧮</span> 금융 계산기</button>
       <button class="menu-item" data-view="assets"><span>💰</span> 자산 관리</button>
       <button class="menu-item" data-view="recurring"><span>🔁</span> 정기 거래 관리</button>
       <div class="menu-divider"></div>
