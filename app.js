@@ -110,7 +110,7 @@
   function ymKey(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1); }
   function dKey(y, m, day) { return y + "-" + pad(m + 1) + "-" + pad(day); }
   function inMonth(tx, d) { return tx.date.slice(0, 7) === ymKey(d); }
-  function todayStr() { return new Date().toISOString().slice(0, 10); }
+  function todayStr() { var d = new Date(); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
   function uid() { return Date.now() + "-" + Math.random().toString(36).slice(2, 7); }
   function onlyNum(s) { return Number(String(s).replace(/[^0-9]/g, "")); }
   function $(id) { return document.getElementById(id); }
