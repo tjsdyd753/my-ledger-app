@@ -61,7 +61,7 @@
     form: { scope: "business", type: "expense", repeat: "once", photos: [], editId: null },
     listFilter: "all",
     dashScope: "business",
-    selectedDay: null,
+    selectedDay: todayStr(),
     pickerYear: null,
     assetKind: "asset",
     currentView: "dashboard",
@@ -288,7 +288,7 @@
   }
   function resetInputForm() {
     $("txAmount").value = ""; $("txMemo").value = "";
-    $("txDate").value = todayStr();
+    $("txDate").value = state.selectedDay || todayStr();
     state.form.photos = []; renderPhotoPreview();
     $("formMsg").textContent = "";
     state.form.repeat = "once";
