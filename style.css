@@ -259,8 +259,8 @@ body {
 }
 .tx-item.personal .tx-badge { background: #F0EBFF; }
 .tx-main { flex: 1; min-width: 0; }
-.tx-cat { font-size: 15px; font-weight: 600; letter-spacing: -.02em; }
-.tx-meta { font-size: 12.5px; color: var(--muted); margin-top: 2px; font-weight: 500; }
+.tx-cat { font-size: 15px; font-weight: 600; letter-spacing: -.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-meta { font-size: 12.5px; color: var(--muted); margin-top: 2px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tx-meta .scope-tag { font-weight: 700; color: var(--ink-2); }
 .tx-amt { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; letter-spacing: -.02em; }
 .tx-amt.income { color: var(--income); }

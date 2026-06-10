@@ -315,6 +315,9 @@
   }
   function openInputEdit(tx) {
     resetInputForm();
+    switchInputMode("tx");
+    $("inputModalTitle").textContent = "거래 수정";
+    $("inputModeSeg").style.display = "none";
     state.form.scope = tx.scope;
     document.querySelectorAll(".seg-btn[data-scope]").forEach(function (b) { b.classList.toggle("active", b.dataset.scope === tx.scope); });
     state.form.type = tx.type;
