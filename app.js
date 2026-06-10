@@ -58,9 +58,9 @@
     schedules: load(SCHED_KEY, []),
     salary:    load(SAL_KEY, JSON.parse(JSON.stringify(DEFAULT_SALARY))),
     month: new Date(),
-    form: { scope: "business", type: "expense", repeat: "once", photos: [], editId: null },
+    form: { scope: "personal", type: "expense", repeat: "once", photos: [], editId: null },
     listFilter: "all",
-    dashScope: "business",
+    dashScope: "personal",
     selectedDay: todayStr(),
     pickerYear: null,
     assetKind: "asset",
@@ -117,7 +117,7 @@
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]; }); }
   var SCHED_COLORS = { blue: "#3182F6", green: "#20C997", orange: "#FF9500", red: "#F04452", purple: "#7C5CFC" };
   function schedColor(c) { return SCHED_COLORS[c] || "#3182F6"; }
-  var schedState = { editId: null, color: "blue", scope: "business" };
+  var schedState = { editId: null, color: "blue", scope: "personal" };
 
   /* ================= 화면 전환 ================= */
   function switchView(name) {
@@ -232,7 +232,7 @@
   }
   var inInputMode = "tx";
   var inSchedColor = "blue";
-  var inSchedScope = "business";
+  var inSchedScope = "personal";
   var inSchedEditId = null;
   var assetEditId = null;
 
@@ -252,7 +252,7 @@
     $("inSchedEndTime").value = "";
     $("inSchedMemo").value = "";
     inSchedEditId = null;
-    inSchedScope = "business";
+    inSchedScope = "personal";
     $("inSchedDelete").hidden = true;
     $("inSchedMsg").textContent = "";
     inSchedColor = "blue";
@@ -260,7 +260,7 @@
       b.classList.toggle("active", b.dataset.color === "blue");
     });
     document.querySelectorAll("#inSchedScopeSeg .seg-btn").forEach(function (b) {
-      b.classList.toggle("active", b.dataset.scope === "business");
+      b.classList.toggle("active", b.dataset.scope === "personal");
     });
   }
 
@@ -293,6 +293,8 @@
     $("formMsg").textContent = "";
     state.form.repeat = "once";
     state.form.editId = null;
+    state.form.scope = "personal";
+    document.querySelectorAll(".seg-btn[data-scope]").forEach(function (b) { b.classList.toggle("active", b.dataset.scope === "personal"); });
     var submitBtn = $("txForm") && $("txForm").querySelector(".btn-primary");
     if (submitBtn) submitBtn.textContent = "저장";
     document.querySelectorAll(".rep-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.repeat === "once"); });
@@ -1075,7 +1077,7 @@
   function openSchedModal(date, sched) {
     schedState.editId = sched ? sched.id : null;
     schedState.color  = sched ? (sched.color || "blue") : "blue";
-    schedState.scope  = sched ? (sched.scope || "business") : "business";
+    schedState.scope  = sched ? (sched.scope || "personal") : "personal";
     $("schedTitle").value      = sched ? sched.title : "";
     $("schedDate").value       = date || todayStr();
     $("schedStartTime").value  = sched ? (sched.startTime || "") : "";
