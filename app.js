@@ -315,6 +315,7 @@
     document.querySelectorAll(".adir-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.adir === "add"); });
     document.querySelectorAll(".akind-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.akind === "asset"); });
     toggleAssetFields(false);
+    updateAssetTypeVisibility();
     var submitBtn = $("txForm") && $("txForm").querySelector(".btn-primary");
     if (submitBtn) submitBtn.textContent = "저장";
     document.querySelectorAll(".rep-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.repeat === "once"); });
@@ -329,6 +330,8 @@
     document.querySelectorAll(".seg-btn[data-scope]").forEach(function (b) { b.classList.toggle("active", b.dataset.scope === tx.scope); });
     state.form.type = tx.type;
     document.querySelectorAll(".type-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.type === tx.type); });
+    var assetTypeBtn = document.querySelector('.type-btn[data-type="asset"]');
+    if (assetTypeBtn) assetTypeBtn.style.display = (tx.scope === "personal") ? "" : "none";
     if (tx.type === "asset") {
       var linked = state.assets.filter(function (a) { return a.id === tx.assetId; })[0];
       state.form.assetKind = (linked && linked.kind) || tx.assetKind || "asset";
@@ -495,8 +498,10 @@
     var byDay = {};
     state.transactions.forEach(function (t) {
       if (t.scope === scope && inMonth(t, state.month)) {
-        var day = +t.date.slice(8, 10); if (!byDay[day]) byDay[day] = { inc: 0, exp: 0 };
-        if (t.type === "income") byDay[day].inc += t.amount; else if (t.type === "expense") byDay[day].exp += t.amount;
+        var day = +t.date.slice(8, 10); if (!byDay[day]) byDay[day] = { inc: 0, exp: 0, ast: 0 };
+        if (t.type === "income") byDay[day].inc += t.amount;
+        else if (t.type === "expense") byDay[day].exp += t.amount;
+        else if (t.type === "asset") byDay[day].ast += t.amount;
       }
     });
     var byDaySched = {};
@@ -512,7 +517,7 @@
       if (wd === 0) cls += " sun"; if (wd === 6) cls += " sat";
       if (isThisMonth && today.getDate() === day) cls += " today";
       if (state.selectedDay === key) cls += " selected";
-      var dots = ""; if (info) { if (info.inc > 0) dots += '<i class="cd income"></i>'; if (info.exp > 0) dots += '<i class="cd expense"></i>'; }
+      var dots = ""; if (info) { if (info.inc > 0) dots += '<i class="cd income"></i>'; if (info.exp > 0) dots += '<i class="cd expense"></i>'; if (info.ast > 0) dots += '<i class="cd asset"></i>'; }
       (byDaySched[day] || []).slice(0, 2).forEach(function (s) { dots += '<i class="cd" style="background:' + schedColor(s.color) + '"></i>'; });
       html += '<button class="' + cls + '" data-date="' + key + '"><span class="cal-day">' + day + '</span><span class="cal-dots">' + dots + '</span></button>';
     }
@@ -712,6 +717,20 @@
       return a.id === assetId ? Object.assign({}, a, { balance: a.balance + delta }) : a;
     });
   }
+  // 자산 유형은 개인 구분에서만 사용 — 사업이면 버튼 숨김
+  function updateAssetTypeVisibility() {
+    var btn = document.querySelector('.type-btn[data-type="asset"]');
+    if (!btn) return;
+    var allow = state.form.scope === "personal";
+    btn.style.display = allow ? "" : "none";
+    // 사업으로 바뀌었는데 현재 자산 유형이면 지출로 되돌림
+    if (!allow && state.form.type === "asset") {
+      state.form.type = "expense";
+      document.querySelectorAll(".type-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.type === "expense"); });
+      toggleAssetFields(false);
+      refreshCategoryOptions();
+    }
+  }
   // isAsset: 자산 유형 여부 / allowNew: "새로 추가" 옵션 노출 여부(수정 시 false)
   function toggleAssetFields(isAsset, allowNew) {
     $("assetKindField").style.display = isAsset ? "" : "none";
@@ -751,6 +770,7 @@
       btn.addEventListener("click", function () {
         document.querySelectorAll(".seg-btn[data-scope]").forEach(function (b) { b.classList.remove("active"); });
         btn.classList.add("active"); state.form.scope = btn.dataset.scope; refreshCategoryOptions();
+        updateAssetTypeVisibility();
       });
     });
     document.querySelectorAll(".type-btn").forEach(function (btn) {

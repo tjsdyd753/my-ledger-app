@@ -356,6 +356,7 @@ body {
 .cal-dots .cd { width: 5px; height: 5px; border-radius: 50%; display: block; }
 .cal-dots .cd.income { background: var(--income); }
 .cal-dots .cd.expense { background: var(--expense); }
+.cal-dots .cd.asset { background: #22c55e; }
 .cal-cell.selected .cal-dots .cd { box-shadow: 0 0 0 1px rgba(255,255,255,.5); }
 
 /* 선택한 날짜 상세 */
