@@ -524,6 +524,37 @@
       </div>
     </section>
 
+    <!-- ─── 통계 (메뉴에서 진입) ─── -->
+    <section id="view-stats" class="view">
+      <div class="section-head">
+        <h2>통계</h2>
+        <p class="muted">기간별 수입·지출·자산을 한눈에 살펴보세요.</p>
+      </div>
+      <div class="panel stats-panel">
+        <!-- 월간 / 연간 -->
+        <div class="seg stats-mode-seg" id="statsModeSeg" role="radiogroup">
+          <button type="button" class="seg-btn active" data-smode="month">월간</button>
+          <button type="button" class="seg-btn" data-smode="year">연간</button>
+        </div>
+        <!-- 기간 이동 -->
+        <div class="stats-period">
+          <button type="button" class="stats-arrow" id="statsPrev" aria-label="이전">‹</button>
+          <span class="stats-period-label" id="statsPeriodLabel">2026년 6월</span>
+          <button type="button" class="stats-arrow" id="statsNext" aria-label="다음">›</button>
+        </div>
+        <!-- 지출 / 수입 / 자산 -->
+        <div class="seg stats-type-seg" id="statsTypeSeg" role="radiogroup">
+          <button type="button" class="seg-btn active" data-stype="expense">지출</button>
+          <button type="button" class="seg-btn" data-stype="income">수입</button>
+          <button type="button" class="seg-btn" data-stype="asset">자산</button>
+        </div>
+        <!-- 도넛 차트 -->
+        <div class="stats-donut-wrap" id="statsDonut"></div>
+        <!-- 카테고리 리스트 -->
+        <div class="stats-list" id="statsList"></div>
+      </div>
+    </section>
+
     <!-- ─── 월급 배분표 (메뉴에서 진입) ─── -->
     <section id="view-salary" class="view">
       <div class="section-head">
@@ -567,6 +598,7 @@
       <button class="menu-item" data-view="list"><span>📑</span> 거래 내역</button>
       <button class="menu-item" data-view="sched"><span>📅</span> 일정 등록</button>
       <div class="menu-divider"></div>
+      <button class="menu-item" data-view="stats"><span>📈</span> 통계</button>
       <button class="menu-item" data-view="salary"><span>💵</span> 월급 배분표</button>
       <button class="menu-item" data-view="vat"><span>🧾</span> 부가세 계산기</button>
       <button class="menu-item" data-view="fincalc"><span>🧮</span> 금융 계산기</button>
@@ -628,6 +660,21 @@
           <button type="button" id="schedDelete" class="btn-delete" hidden>일정 삭제</button>
           <p id="schedMsg" class="form-msg" aria-live="polite"></p>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 카테고리 거래 목록 모달 ===== -->
+  <div id="catTxOverlay" class="modal-overlay" hidden>
+    <div class="modal-sheet">
+      <div class="modal-grab"></div>
+      <div class="modal-head">
+        <strong id="catTxTitle"></strong>
+        <button type="button" id="catTxClose" class="modal-close" aria-label="닫기">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="catTxSummary" class="cattx-summary"></div>
+        <div id="catTxList" class="cattx-list"></div>
       </div>
     </div>
   </div>

@@ -129,6 +129,7 @@
     if (name === "vat") renderVatView();
     if (name === "salary") renderSalary();
     if (name === "fincalc") renderFinCalc();
+    if (name === "stats") { setupStatsOnce(); renderStats(); }
     updateFab();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -227,7 +228,7 @@
   }
   // 입력 화면이거나 메뉴가 열려 있으면 입력 버튼을 숨깁니다
   function updateFab() {
-    var noFab = ["assets", "recurring", "vat", "salary", "fincalc"];
+    var noFab = ["assets", "recurring", "vat", "salary", "fincalc", "stats"];
     $("fab").hidden = state.menuOpen || state.inputOpen || noFab.indexOf(state.currentView) !== -1;
   }
   var inInputMode = "tx";
@@ -489,9 +490,41 @@
     if (!rows.length) { box.innerHTML = '<p class="empty">이번 달 기록된 ' + (scope === "business" ? "비용" : "지출") + '이 없습니다.</p>'; return; }
     var max = rows[0].amt;
     box.innerHTML = rows.map(function (r) {
-      return '<div class="cat-row"><span class="cat-name">' + esc(r.name) + '</span><span class="cat-bar"><span style="width:' + (r.amt / max * 100) + '%"></span></span><span class="cat-amt">' + won(r.amt) + '</span></div>';
+      return '<button type="button" class="cat-row cat-row-btn" data-cat="' + esc(r.name) + '"><span class="cat-name">' + esc(r.name) + '</span><span class="cat-bar"><span style="width:' + (r.amt / max * 100) + '%"></span></span><span class="cat-amt">' + won(r.amt) + '</span><span class="cat-chevron">›</span></button>';
     }).join("");
+    box.querySelectorAll(".cat-row-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () { openCatTx(btn.dataset.cat, scope); });
+    });
   }
+  /* ===== 카테고리별 거래 목록 팝업 ===== */
+  function openCatTx(category, scope) {
+    var list = state.transactions.filter(function (t) {
+      return t.scope === scope && t.type === "expense" && t.category === category && inMonth(t, state.month);
+    }).sort(function (a, b) { return b.date.localeCompare(a.date) || b.id.localeCompare(a.id); });
+    var total = list.reduce(function (s, t) { return s + t.amount; }, 0);
+    var mLabel = (state.month.getMonth() + 1) + "월";
+    $("catTxTitle").textContent = category;
+    $("catTxSummary").innerHTML =
+      '<span class="cattx-sum-label">' + mLabel + ' · ' + list.length + '건</span>' +
+      '<span class="cattx-sum-amt">' + won(total) + '</span>';
+    if (!list.length) {
+      $("catTxList").innerHTML = '<p class="empty">이 카테고리의 거래가 없습니다.</p>';
+    } else {
+      $("catTxList").innerHTML = list.map(function (t) {
+        var ph = photosOf(t.id);
+        var photo = ph.length ? '<button class="photo-btn" data-photo="' + t.id + '">📷</button>' : '';
+        return '<div class="cattx-row"><div class="cattx-main"><div class="cattx-memo">' + (t.memo ? esc(t.memo) : esc(t.category)) + '</div><div class="cattx-date">' + t.date + '</div></div>' + photo + '<div class="tx-amt expense">-' + won(t.amount) + '</div></div>';
+      }).join("");
+      $("catTxList").querySelectorAll(".photo-btn").forEach(function (b) {
+        b.addEventListener("click", function () {
+          var tx = state.transactions.filter(function (t) { return t.id === b.dataset.photo; })[0];
+          if (tx) openPhotos(photosOf(tx.id));
+        });
+      });
+    }
+    $("catTxOverlay").hidden = false;
+  }
+  function closeCatTx() { $("catTxOverlay").hidden = true; }
   function renderCalendar(scope) {
     var grid = $("calendarGrid"), y = state.month.getFullYear(), m = state.month.getMonth();
     var firstWeekday = new Date(y, m, 1).getDay(), daysInMonth = new Date(y, m + 1, 0).getDate();
@@ -1369,6 +1402,94 @@
     });
   }
 
+  /* ================= 통계 ================= */
+  var statsMode = "month";      // month | year
+  var statsType = "expense";    // expense | income | asset
+  var statsDate = new Date();   // 기준 기간
+  var _statsReady = false;
+  var STATS_COLORS = ["#F0735A", "#5AC8A8", "#5A9CF0", "#F5B945", "#A87FE0", "#54C0CE", "#E07FB0", "#8DC15A", "#9AA0AA", "#D98C5F"];
+
+  function statsPeriodLabel() {
+    var y = statsDate.getFullYear(), m = statsDate.getMonth() + 1;
+    return statsMode === "year" ? (y + "년") : (y + "년 " + m + "월");
+  }
+  function statsInPeriod(tx) {
+    if (statsMode === "year") return tx.date.slice(0, 4) === String(statsDate.getFullYear());
+    return tx.date.slice(0, 7) === statsDate.getFullYear() + "-" + pad(statsDate.getMonth() + 1);
+  }
+  function statsShift(delta) {
+    if (statsMode === "year") statsDate = new Date(statsDate.getFullYear() + delta, statsDate.getMonth(), 1);
+    else statsDate = new Date(statsDate.getFullYear(), statsDate.getMonth() + delta, 1);
+    renderStats();
+  }
+  function buildDonutSVG(rows, total, typeKo) {
+    var size = 188, stroke = 28, r = (size - stroke) / 2, cx = size / 2, cy = size / 2, circ = 2 * Math.PI * r;
+    var offset = 0;
+    var segs = rows.map(function (row, i) {
+      var frac = total > 0 ? row.amt / total : 0;
+      var len = frac * circ;
+      var color = STATS_COLORS[i % STATS_COLORS.length];
+      var dash = len + " " + (circ - len);
+      var el = '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="' + stroke + '" stroke-dasharray="' + dash + '" stroke-dashoffset="' + (-offset) + '" stroke-linecap="butt" />';
+      offset += len;
+      return el;
+    }).join("");
+    return '<svg class="stats-donut" viewBox="0 0 ' + size + ' ' + size + '">' +
+      '<g transform="rotate(-90 ' + cx + ' ' + cy + ')">' + segs + '</g>' +
+      '<text class="stats-donut-cap" x="' + cx + '" y="' + (cy - 6) + '" text-anchor="middle">' + typeKo + ' 합계</text>' +
+      '<text class="stats-donut-total" x="' + cx + '" y="' + (cy + 17) + '" text-anchor="middle">' + won(total) + '</text>' +
+      '</svg>';
+  }
+  function renderStats() {
+    if (!$("statsPeriodLabel")) return;
+    $("statsPeriodLabel").textContent = statsPeriodLabel();
+    document.querySelectorAll("#statsModeSeg .seg-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.smode === statsMode); });
+    document.querySelectorAll("#statsTypeSeg .seg-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.stype === statsType); });
+
+    var sums = {}, total = 0;
+    state.transactions.forEach(function (t) {
+      if (t.type !== statsType || !statsInPeriod(t)) return;
+      var key;
+      if (statsType === "asset") {
+        var a = state.assets.filter(function (x) { return x.id === t.assetId; })[0];
+        key = a ? a.name : "자산 관리";
+      } else { key = t.category; }
+      sums[key] = (sums[key] || 0) + t.amount;
+      total += t.amount;
+    });
+    var rows = Object.keys(sums).map(function (k) { return { name: k, amt: sums[k] }; }).sort(function (a, b) { return b.amt - a.amt; });
+
+    var typeKo = statsType === "expense" ? "지출" : (statsType === "income" ? "수입" : "자산");
+    var donutBox = $("statsDonut"), listBox = $("statsList");
+    if (!rows.length) {
+      donutBox.innerHTML = '<div class="stats-empty">이 기간에 기록된 ' + typeKo + ' 내역이 없습니다.</div>';
+      listBox.innerHTML = "";
+      return;
+    }
+    donutBox.innerHTML = buildDonutSVG(rows, total, typeKo);
+    listBox.innerHTML = rows.map(function (r, i) {
+      var p = total > 0 ? (r.amt / total * 100) : 0;
+      var color = STATS_COLORS[i % STATS_COLORS.length];
+      return '<div class="stats-row">' +
+        '<span class="stats-pct">' + Math.round(p) + '%</span>' +
+        '<span class="stats-dot" style="background:' + color + '"></span>' +
+        '<span class="stats-name">' + esc(r.name) + '</span>' +
+        '<span class="stats-amt">' + won(r.amt) + '</span>' +
+        '</div>';
+    }).join("");
+  }
+  function setupStatsOnce() {
+    if (_statsReady) return; _statsReady = true;
+    document.querySelectorAll("#statsModeSeg .seg-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () { statsMode = btn.dataset.smode; renderStats(); });
+    });
+    document.querySelectorAll("#statsTypeSeg .seg-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () { statsType = btn.dataset.stype; renderStats(); });
+    });
+    $("statsPrev").addEventListener("click", function () { statsShift(-1); });
+    $("statsNext").addEventListener("click", function () { statsShift(1); });
+  }
+
   /* ================= Firebase 로그인 ================= */
   var firebaseConfig = {
     apiKey: "AIzaSyDPyTmu6FX6lx_QqL_yL4dGUfMDhjTLwQg",
@@ -1445,7 +1566,7 @@
         state.salary = JSON.parse(JSON.stringify(DEFAULT_SALARY));
         persist();
       }
-      state.selectedDay = null;
+      state.selectedDay = todayStr();   // 앱 시작 시 오늘 날짜 자동 선택
       generateRecurring();        // 밀린 정기거래 채우기
       refreshCategoryOptions();
       refreshAssetCategoryOptions();
@@ -1458,7 +1579,7 @@
   /* ================= 공통 셋업 ================= */
   function setupDashToggle() {
     document.querySelectorAll("#dashToggle .seg-btn").forEach(function (btn) {
-      btn.addEventListener("click", function () { state.dashScope = btn.dataset.dscope; state.selectedDay = null; renderDashboard(); });
+      btn.addEventListener("click", function () { state.dashScope = btn.dataset.dscope; renderDashboard(); });
     });
   }
   function setupPicker() {
@@ -1535,6 +1656,8 @@
     setupPhotoInput();
     $("photoClose").addEventListener("click", closePhotos);
     $("photoOverlay").addEventListener("click", function (e) { if (e.target === $("photoOverlay")) closePhotos(); });
+    $("catTxClose").addEventListener("click", closeCatTx);
+    $("catTxOverlay").addEventListener("click", function (e) { if (e.target === $("catTxOverlay")) closeCatTx(); });
     updateFab();
 
     var cloud = setupAuth();

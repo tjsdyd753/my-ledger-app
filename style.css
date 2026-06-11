@@ -168,10 +168,18 @@ body {
 /* 카테고리 분해 */
 .cat-list { display: flex; flex-direction: column; gap: 13px; }
 .cat-row { display: grid; grid-template-columns: 92px 1fr auto; align-items: center; gap: 10px; }
+.cat-row-btn {
+  grid-template-columns: 92px 1fr auto auto;
+  width: 100%; border: none; background: transparent; cursor: pointer;
+  font-family: inherit; text-align: left; padding: 4px 0; border-radius: 8px;
+  transition: background .15s ease;
+}
+.cat-row-btn:active { background: var(--surface-2); }
 .cat-name { font-size: 13.5px; font-weight: 500; }
 .cat-bar { height: 8px; background: var(--bg); border-radius: 999px; overflow: hidden; }
 .cat-bar > span { display: block; height: 100%; background: var(--primary); border-radius: 999px; }
 .cat-amt { font-size: 13px; font-variant-numeric: tabular-nums; color: var(--ink-2); font-weight: 600; }
+.cat-chevron { font-size: 18px; color: var(--muted); line-height: 1; padding-left: 2px; }
 .empty { color: var(--muted); font-size: 13.5px; text-align: center; padding: 20px 0; font-weight: 500; }
 
 /* ---------- 입력 폼 ---------- */
@@ -1009,3 +1017,61 @@ body { padding-bottom: 36px; }
 .fc-res-highlight { font-size: 17px; color: var(--primary); }
 .fc-res-muted { font-size: 13px; color: var(--muted); font-weight: 500; }
 .fc-error { font-size: 14px; color: var(--expense); padding: 14px 20px; text-align: center; }
+
+/* ============================================
+   통계 (Statistics)
+   ============================================ */
+.stats-panel { padding-top: 18px; }
+.stats-mode-seg { margin-bottom: 14px; }
+.stats-period {
+  display: flex; align-items: center; justify-content: center; gap: 18px; margin: 4px 0 16px;
+}
+.stats-arrow {
+  width: 36px; height: 36px; flex: none; border: none; cursor: pointer;
+  background: var(--surface-2); color: var(--ink-2); border-radius: 50%;
+  font-size: 20px; line-height: 1; display: grid; place-items: center; font-family: inherit;
+  transition: background .15s ease;
+}
+.stats-arrow:active { background: var(--line); }
+.stats-period-label { font-size: 17px; font-weight: 700; color: var(--ink); min-width: 130px; text-align: center; letter-spacing: -.02em; }
+.stats-type-seg { margin-bottom: 6px; }
+
+/* 도넛 차트 */
+.stats-donut-wrap { display: grid; place-items: center; padding: 24px 0 18px; }
+.stats-donut { width: 188px; height: 188px; }
+.stats-donut-cap { font-size: 12.5px; fill: var(--muted); font-weight: 600; }
+.stats-donut-total { font-size: 19px; fill: var(--ink); font-weight: 800; }
+.stats-empty { padding: 48px 0; text-align: center; color: var(--muted); font-size: 14px; }
+
+/* 카테고리 리스트 */
+.stats-list { display: flex; flex-direction: column; }
+.stats-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 2px; border-top: 1px solid var(--line);
+}
+.stats-row:first-child { border-top: none; }
+.stats-pct { font-size: 13px; font-weight: 700; color: var(--ink-2); width: 38px; flex: none; font-variant-numeric: tabular-nums; }
+.stats-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.stats-name { font-size: 15px; font-weight: 600; color: var(--ink); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stats-amt { font-size: 15px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; flex: none; letter-spacing: -.02em; }
+
+/* ============================================
+   카테고리 거래 목록 모달
+   ============================================ */
+.cattx-summary {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: 14px 16px; margin-bottom: 12px;
+  background: var(--surface-2); border-radius: var(--radius-sm);
+}
+.cattx-sum-label { font-size: 13.5px; color: var(--muted); font-weight: 600; }
+.cattx-sum-amt { font-size: 19px; font-weight: 800; color: var(--expense); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.cattx-list { display: flex; flex-direction: column; }
+.cattx-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 2px; border-top: 1px solid var(--line);
+}
+.cattx-row:first-child { border-top: none; }
+.cattx-main { flex: 1; min-width: 0; }
+.cattx-memo { font-size: 15px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cattx-date { font-size: 12.5px; color: var(--muted); font-weight: 500; margin-top: 2px; }
+.cattx-row .tx-amt { flex: none; }
