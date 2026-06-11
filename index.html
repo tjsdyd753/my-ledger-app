@@ -128,14 +128,29 @@
               </div>
             </div>
             <!-- 자산 관리 전용 필드 -->
+            <div id="assetKindField" class="field" style="display:none">
+              <label>자산 / 부채</label>
+              <div class="seg" role="radiogroup" id="txAssetKindSeg">
+                <button type="button" class="seg-btn akind-btn active" data-akind="asset">💰 자산</button>
+                <button type="button" class="seg-btn akind-btn" data-akind="liability">💳 부채</button>
+              </div>
+            </div>
             <div id="assetPickField" class="field" style="display:none">
-              <label for="txAssetId">자산 선택</label>
+              <label for="txAssetId">대상 선택</label>
               <select id="txAssetId"></select>
+            </div>
+            <div id="assetNewNameField" class="field" style="display:none">
+              <label for="txAssetName">새 이름</label>
+              <input type="text" id="txAssetName" placeholder="예: 청년도약계좌" autocomplete="off" />
+            </div>
+            <div id="assetNewCatField" class="field" style="display:none">
+              <label for="txAssetCategory">카테고리</label>
+              <select id="txAssetCategory"></select>
             </div>
             <div id="assetDirField" class="field" style="display:none">
               <label>처리</label>
               <div class="seg" role="radiogroup">
-                <button type="button" class="seg-btn adir-btn active" data-adir="add">＋ 추가 (납입·입금)</button>
+                <button type="button" class="seg-btn adir-btn active" data-adir="add">＋ 추가 (납입·증가)</button>
                 <button type="button" class="seg-btn adir-btn" data-adir="sub">－ 차감 (출금·상환)</button>
               </div>
             </div>
@@ -160,7 +175,7 @@
               <input type="date" id="txDate" />
             </div>
             <div id="txRepeatField" class="field">
-              <label>반복 <small class="muted">(정기 구독·임대료 등 자동 등록)</small></label>
+              <label>반복 <small class="muted" id="repeatHint">(정기 구독·임대료 등 자동 등록)</small></label>
               <div class="seg" role="radiogroup">
                 <button type="button" class="seg-btn rep-btn active" data-repeat="once">한 번</button>
                 <button type="button" class="seg-btn rep-btn" data-repeat="monthly">🔁 매월</button>

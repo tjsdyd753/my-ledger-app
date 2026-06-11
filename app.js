@@ -58,7 +58,7 @@
     schedules: load(SCHED_KEY, []),
     salary:    load(SAL_KEY, JSON.parse(JSON.stringify(DEFAULT_SALARY))),
     month: new Date(),
-    form: { scope: "personal", type: "expense", repeat: "once", photos: [], editId: null, assetId: null, assetDir: "add" },
+    form: { scope: "personal", type: "expense", repeat: "once", photos: [], editId: null, assetId: null, assetDir: "add", assetKind: "asset" },
     listFilter: "all",
     dashScope: "personal",
     selectedDay: todayStr(),
@@ -308,10 +308,12 @@
     state.form.editId = null;
     state.form.scope = "personal";
     state.form.type = "expense";
-    state.form.assetId = null; state.form.assetDir = "add";
+    state.form.assetId = null; state.form.assetDir = "add"; state.form.assetKind = "asset";
+    if ($("txAssetName")) $("txAssetName").value = "";
     document.querySelectorAll(".seg-btn[data-scope]").forEach(function (b) { b.classList.toggle("active", b.dataset.scope === "personal"); });
     document.querySelectorAll(".type-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.type === "expense"); });
     document.querySelectorAll(".adir-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.adir === "add"); });
+    document.querySelectorAll(".akind-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.akind === "asset"); });
     toggleAssetFields(false);
     var submitBtn = $("txForm") && $("txForm").querySelector(".btn-primary");
     if (submitBtn) submitBtn.textContent = "저장";
@@ -328,10 +330,13 @@
     state.form.type = tx.type;
     document.querySelectorAll(".type-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.type === tx.type); });
     if (tx.type === "asset") {
-      toggleAssetFields(true);
+      var linked = state.assets.filter(function (a) { return a.id === tx.assetId; })[0];
+      state.form.assetKind = (linked && linked.kind) || tx.assetKind || "asset";
       state.form.assetId = tx.assetId || null;
       state.form.assetDir = tx.assetDir || "add";
+      toggleAssetFields(true, false); // 수정 시 "새로 추가" 불가
       document.querySelectorAll(".adir-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.adir === state.form.assetDir); });
+      $("txRepeatField").style.display = "none"; // 수정은 단건만
     } else {
       refreshCategoryOptions();
       $("txCategory").value = tx.category;
@@ -382,10 +387,15 @@
         // 같은 정기거래의 같은 날짜 거래가 이미 있으면 건너뜀 (중복 방지)
         var exists = state.transactions.some(function (t) { return t.recurringId === r.id && t.date === r.nextDate; });
         if (!exists) {
-          state.transactions.push({
+          var occ = {
             id: uid(), date: r.nextDate, scope: r.scope, type: r.type,
             category: r.category, amount: r.amount, memo: r.memo, recurringId: r.id
-          });
+          };
+          if (r.type === "asset") {
+            occ.assetId = r.assetId; occ.assetDir = r.assetDir; occ.assetKind = r.assetKind;
+            applyAssetDelta(r.assetId, (r.assetDir === "add" ? 1 : -1) * r.amount);
+          }
+          state.transactions.push(occ);
         }
         r.nextDate = advance(r.nextDate, r.interval);
         touched = true; guard++;
@@ -666,29 +676,62 @@
     $("txCategory").innerHTML = opts.map(function (o) { return '<option>' + esc(o) + '</option>'; }).join("");
     renderCatPills();
   }
-  function refreshAssetPicker() {
+  // 자산 입력: 선택한 자산/부채 종류에 맞는 기존 목록 + "새로 추가" 옵션
+  function refreshAssetPicker(allowNew) {
     var sel = $("txAssetId");
     if (!sel) return;
-    if (!state.assets.length) {
-      sel.innerHTML = '<option value="">— 자산 없음 (자산 메뉴에서 먼저 추가) —</option>';
-      return;
-    }
-    sel.innerHTML = state.assets.map(function (a) {
-      return '<option value="' + a.id + '">' + esc(a.name) + ' (' + (a.kind === "liability" ? "부채" : "자산") + ')</option>';
+    var kind = state.form.assetKind;
+    var list = state.assets.filter(function (a) { return (a.kind || "asset") === kind; });
+    var html = "";
+    if (allowNew !== false) html += '<option value="__new__">➕ 새로 추가</option>';
+    html += list.map(function (a) {
+      return '<option value="' + a.id + '">' + esc(a.name) + ' · ' + won(a.balance) + '</option>';
     }).join("");
+    sel.innerHTML = html;
     if (state.form.assetId) sel.value = state.form.assetId;
+    else if (list.length) sel.value = list[0].id;        // 기존 자산이 있으면 첫 항목
+    else sel.value = (allowNew !== false) ? "__new__" : "";
+    updateAssetNewFields();
+  }
+  // 카테고리 드롭다운 (자산/부채 종류별)
+  function refreshAssetTxCategory() {
+    var sel = $("txAssetCategory");
+    if (!sel) return;
+    var opts = state.assetCategories[state.form.assetKind] || [];
+    sel.innerHTML = opts.map(function (o) { return '<option>' + esc(o) + '</option>'; }).join("");
+  }
+  // "새로 추가" 선택 시에만 이름/카테고리 입력 노출
+  function updateAssetNewFields() {
+    var isNew = $("txAssetId").value === "__new__";
+    $("assetNewNameField").style.display = isNew ? "" : "none";
+    $("assetNewCatField").style.display = isNew ? "" : "none";
+    if (isNew) refreshAssetTxCategory();
   }
   function applyAssetDelta(assetId, delta) {
     state.assets = state.assets.map(function (a) {
       return a.id === assetId ? Object.assign({}, a, { balance: a.balance + delta }) : a;
     });
   }
-  function toggleAssetFields(isAsset) {
+  // isAsset: 자산 유형 여부 / allowNew: "새로 추가" 옵션 노출 여부(수정 시 false)
+  function toggleAssetFields(isAsset, allowNew) {
+    $("assetKindField").style.display = isAsset ? "" : "none";
     $("assetPickField").style.display = isAsset ? "" : "none";
     $("assetDirField").style.display = isAsset ? "" : "none";
     $("txCategoryField").style.display = isAsset ? "none" : "";
-    $("txRepeatField").style.display = isAsset ? "none" : "";
-    if (isAsset) refreshAssetPicker();
+    if (!isAsset) {
+      $("assetNewNameField").style.display = "none";
+      $("assetNewCatField").style.display = "none";
+    }
+    // 반복 필드는 자산·일반 모두 사용. 항상 표시(수정 시에만 호출부에서 숨김). 설명 텍스트만 교체.
+    $("txRepeatField").style.display = "";
+    var hint = $("repeatHint");
+    if (hint) hint.textContent = isAsset
+      ? "(적금·할부 등 매월 자동 반영)"
+      : "(정기 구독·임대료 등 자동 등록)";
+    if (isAsset) {
+      document.querySelectorAll(".akind-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.akind === state.form.assetKind); });
+      refreshAssetPicker(allowNew);
+    }
   }
   function renderCatPills() {
     var opts = state.categories[state.form.scope][state.form.type] || [];
@@ -726,6 +769,19 @@
         btn.classList.add("active"); state.form.assetDir = btn.dataset.adir;
       });
     });
+    document.querySelectorAll(".akind-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        document.querySelectorAll(".akind-btn").forEach(function (b) { b.classList.remove("active"); });
+        btn.classList.add("active");
+        state.form.assetKind = btn.dataset.akind;
+        state.form.assetId = null; // 종류 변경 시 선택 초기화
+        refreshAssetPicker(true);
+      });
+    });
+    $("txAssetId").addEventListener("change", function () {
+      state.form.assetId = this.value === "__new__" ? null : this.value;
+      updateAssetNewFields();
+    });
     document.querySelectorAll(".rep-btn").forEach(function (btn) {
       btn.addEventListener("click", function () {
         document.querySelectorAll(".rep-btn").forEach(function (b) { b.classList.remove("active"); });
@@ -755,29 +811,52 @@
 
       // 자산 유형 처리 (별도 분기)
       if (state.form.type === "asset") {
-        var assetId = $("txAssetId").value;
-        if (!assetId) { msg.textContent = "자산을 선택해 주세요."; msg.className = "form-msg err"; return; }
         var assetDir = state.form.assetDir || "add";
         var delta = assetDir === "add" ? amount : -amount;
+        var assetKind = state.form.assetKind || "asset";
+        var pick = $("txAssetId").value;
+        var assetId, assetName;
+
+        // 수정 모드 (단건만)
         if (state.form.editId) {
+          assetId = pick;
+          if (!assetId || assetId === "__new__") { msg.textContent = "대상 자산을 선택해 주세요."; msg.className = "form-msg err"; return; }
           var oldTx = state.transactions.filter(function (t) { return t.id === state.form.editId; })[0];
           if (oldTx && oldTx.type === "asset" && oldTx.assetId) {
-            var oldDelta = (oldTx.assetDir === "add" ? 1 : -1) * oldTx.amount;
-            applyAssetDelta(oldTx.assetId, -oldDelta);
+            applyAssetDelta(oldTx.assetId, -(oldTx.assetDir === "add" ? 1 : -1) * oldTx.amount);
           }
           state.transactions = state.transactions.map(function (t) {
             if (t.id !== state.form.editId) return t;
-            return Object.assign({}, t, { scope: state.form.scope, type: "asset", category: "자산 관리", assetId: assetId, assetDir: assetDir, amount: amount, memo: $("txMemo").value.trim(), date: date });
+            return Object.assign({}, t, { scope: state.form.scope, type: "asset", category: "자산 관리", assetId: assetId, assetDir: assetDir, assetKind: assetKind, amount: amount, memo: $("txMemo").value.trim(), date: date });
           });
           applyAssetDelta(assetId, delta);
-          persist(); msg.textContent = "✓ 수정되었습니다.";
-        } else {
-          var atx = { id: uid(), date: date, scope: state.form.scope, type: "asset", category: "자산 관리", assetId: assetId, assetDir: assetDir, amount: amount, memo: $("txMemo").value.trim() };
-          state.transactions.push(atx);
-          applyAssetDelta(assetId, delta);
-          persist(); msg.textContent = "✓ 저장되었습니다.";
+          persist(); renderAll(); closeInput(); return;
         }
-        renderAll(); closeInput(); return;
+
+        // 신규: "새로 추가" 선택 시 자산 목록에 새 항목 생성
+        if (pick === "__new__") {
+          assetName = $("txAssetName").value.trim();
+          if (!assetName) { msg.textContent = "새 자산 이름을 입력해 주세요."; msg.className = "form-msg err"; return; }
+          var newAsset = { id: uid(), name: assetName, category: $("txAssetCategory").value || "", balance: 0, kind: assetKind };
+          state.assets.push(newAsset);
+          assetId = newAsset.id;
+        } else {
+          assetId = pick;
+          if (!assetId) { msg.textContent = "대상 자산을 선택해 주세요."; msg.className = "form-msg err"; return; }
+        }
+
+        var baseA = { scope: state.form.scope, type: "asset", category: "자산 관리", assetId: assetId, assetDir: assetDir, assetKind: assetKind, amount: amount, memo: $("txMemo").value.trim() };
+
+        if (state.form.repeat === "once") {
+          state.transactions.push(Object.assign({ id: uid(), date: date }, baseA));
+          applyAssetDelta(assetId, delta);
+          persist(); renderAll(); closeInput(); return;
+        }
+        // 반복: 적금·할부 등 자동 반영
+        var ruleA = Object.assign({ id: uid(), interval: state.form.repeat, startDate: date, nextDate: date }, baseA);
+        state.recurring.push(ruleA);
+        generateRecurring(); // 첫 회차부터 생성·잔액 반영
+        persist(); renderAll(); closeInput(); return;
       }
 
       var base = { scope: state.form.scope, type: state.form.type, category: $("txCategory").value, amount: amount, memo: $("txMemo").value.trim() };
@@ -1062,8 +1141,17 @@
     var box = $("recurringList");
     if (!state.recurring.length) { box.innerHTML = '<p class="empty">등록된 정기 거래가 없습니다. 입력 화면에서 반복을 "매월/매년"으로 저장하면 여기에 표시돼요.</p>'; return; }
     box.innerHTML = state.recurring.map(function (r) {
-      var scopeKo = r.scope === "business" ? "사업" : "개인", intKo = r.interval === "monthly" ? "매월" : "매년", sign = r.type === "income" ? "+" : "-";
-      return '<div class="tx-item"><div class="tx-badge">🔁</div><div class="tx-main"><div class="tx-cat">' + esc(r.category) + (r.memo ? ' · ' + esc(r.memo) : '') + '</div><div class="tx-meta"><span class="scope-tag">' + scopeKo + '</span> · ' + intKo + ' · 다음 ' + r.nextDate + '</div></div><div class="tx-amt ' + r.type + '">' + sign + won(r.amount) + '</div><button class="tx-del" data-id="' + r.id + '" aria-label="중지">×</button></div>';
+      var scopeKo = r.scope === "business" ? "사업" : "개인", intKo = r.interval === "monthly" ? "매월" : "매년";
+      var label, sign, amtClass;
+      if (r.type === "asset") {
+        var la = state.assets.filter(function (a) { return a.id === r.assetId; })[0];
+        label = "💰 " + (la ? esc(la.name) : "자산 관리");
+        sign = r.assetDir === "add" ? "+" : "-";
+        amtClass = "asset-" + (r.assetDir || "add");
+      } else {
+        label = esc(r.category); sign = r.type === "income" ? "+" : "-"; amtClass = r.type;
+      }
+      return '<div class="tx-item"><div class="tx-badge">🔁</div><div class="tx-main"><div class="tx-cat">' + label + (r.memo ? ' · ' + esc(r.memo) : '') + '</div><div class="tx-meta"><span class="scope-tag">' + scopeKo + '</span> · ' + intKo + ' · 다음 ' + r.nextDate + '</div></div><div class="tx-amt ' + amtClass + '">' + sign + won(r.amount) + '</div><button class="tx-del" data-id="' + r.id + '" aria-label="중지">×</button></div>';
     }).join("");
     box.querySelectorAll(".tx-del").forEach(function (btn) {
       btn.addEventListener("click", function () {
