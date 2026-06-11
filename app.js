@@ -58,7 +58,7 @@
     schedules: load(SCHED_KEY, []),
     salary:    load(SAL_KEY, JSON.parse(JSON.stringify(DEFAULT_SALARY))),
     month: new Date(),
-    form: { scope: "personal", type: "expense", repeat: "once", photos: [], editId: null },
+    form: { scope: "personal", type: "expense", repeat: "once", photos: [], editId: null, assetId: null, assetDir: "add" },
     listFilter: "all",
     dashScope: "personal",
     selectedDay: todayStr(),
@@ -137,7 +137,7 @@
     var month = state.month, year = month.getFullYear(), monthNum = month.getMonth() + 1;
     var mInc = 0, mExp = 0;
     state.transactions.forEach(function (t) {
-      if (t.scope !== "business" || !inMonth(t, month)) return;
+      if (t.scope !== "business" || !inMonth(t, month) || t.type === "asset") return;
       if (t.type === "income") mInc += t.amount; else mExp += t.amount;
     });
     var mVatOut = Math.round(mInc * 0.1), mVatIn = Math.round(mExp * 0.1), mVatDue = mVatOut - mVatIn;
@@ -149,7 +149,7 @@
     state.transactions.forEach(function (t) {
       if (t.scope !== "business") return;
       var p = t.date.split("-"), ty = +p[0], tm = +p[1];
-      if (ty === year && tm >= halfStart && tm <= halfEnd) { if (t.type === "income") hInc += t.amount; else hExp += t.amount; }
+      if (ty === year && tm >= halfStart && tm <= halfEnd && t.type !== "asset") { if (t.type === "income") hInc += t.amount; else hExp += t.amount; }
     });
     var hVatOut = Math.round(hInc * 0.1), hVatIn = Math.round(hExp * 0.1), hVatDue = hVatOut - hVatIn;
     function vc(v) { return v > 0 ? "positive" : (v < 0 ? "negative" : ""); }
@@ -160,7 +160,7 @@
       state.transactions.forEach(function (t) {
         if (t.scope !== "business") return;
         var p = t.date.split("-"), ty = +p[0], tm = +p[1];
-        if (ty === year && tm === mo) { if (t.type === "income") moInc += t.amount; else moExp += t.amount; }
+        if (ty === year && tm === mo && t.type !== "asset") { if (t.type === "income") moInc += t.amount; else moExp += t.amount; }
       });
       var moVatOut = Math.round(moInc * 0.1), moVatIn = Math.round(moExp * 0.1), moVatDue = moVatOut - moVatIn;
       monthRows += '<div class="vat-month-row' + (mo === monthNum ? " current" : "") + '">' +
@@ -307,7 +307,12 @@
     state.form.repeat = "once";
     state.form.editId = null;
     state.form.scope = "personal";
+    state.form.type = "expense";
+    state.form.assetId = null; state.form.assetDir = "add";
     document.querySelectorAll(".seg-btn[data-scope]").forEach(function (b) { b.classList.toggle("active", b.dataset.scope === "personal"); });
+    document.querySelectorAll(".type-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.type === "expense"); });
+    document.querySelectorAll(".adir-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.adir === "add"); });
+    toggleAssetFields(false);
     var submitBtn = $("txForm") && $("txForm").querySelector(".btn-primary");
     if (submitBtn) submitBtn.textContent = "저장";
     document.querySelectorAll(".rep-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.repeat === "once"); });
@@ -322,8 +327,15 @@
     document.querySelectorAll(".seg-btn[data-scope]").forEach(function (b) { b.classList.toggle("active", b.dataset.scope === tx.scope); });
     state.form.type = tx.type;
     document.querySelectorAll(".type-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.type === tx.type); });
-    refreshCategoryOptions();
-    $("txCategory").value = tx.category;
+    if (tx.type === "asset") {
+      toggleAssetFields(true);
+      state.form.assetId = tx.assetId || null;
+      state.form.assetDir = tx.assetDir || "add";
+      document.querySelectorAll(".adir-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.adir === state.form.assetDir); });
+    } else {
+      refreshCategoryOptions();
+      $("txCategory").value = tx.category;
+    }
     $("txAmount").value = tx.amount.toLocaleString("ko-KR");
     $("txDate").value = tx.date;
     $("txMemo").value = tx.memo || "";
@@ -386,7 +398,7 @@
   function scopeTotals(scope) {
     var inc = 0, exp = 0;
     state.transactions.forEach(function (t) {
-      if (t.scope === scope && inMonth(t, state.month)) { if (t.type === "income") inc += t.amount; else exp += t.amount; }
+      if (t.scope === scope && inMonth(t, state.month) && t.type !== "asset") { if (t.type === "income") inc += t.amount; else exp += t.amount; }
     });
     return { inc: inc, exp: exp, net: inc - exp };
   }
@@ -447,7 +459,7 @@
     for (var i = 5; i >= 0; i--) months.push(new Date(state.month.getFullYear(), state.month.getMonth() - i, 1));
     var data = months.map(function (m) {
       var inc = 0, exp = 0;
-      state.transactions.forEach(function (tx) { if (tx.scope === scope && inMonth(tx, m)) { if (tx.type === "income") inc += tx.amount; else exp += tx.amount; } });
+      state.transactions.forEach(function (tx) { if (tx.scope === scope && inMonth(tx, m) && tx.type !== "asset") { if (tx.type === "income") inc += tx.amount; else exp += tx.amount; } });
       return { m: m, inc: inc, exp: exp };
     });
     var max = Math.max(1, Math.max.apply(null, data.map(function (d) { return Math.max(d.inc, d.exp); })));
@@ -474,7 +486,7 @@
     state.transactions.forEach(function (t) {
       if (t.scope === scope && inMonth(t, state.month)) {
         var day = +t.date.slice(8, 10); if (!byDay[day]) byDay[day] = { inc: 0, exp: 0 };
-        if (t.type === "income") byDay[day].inc += t.amount; else byDay[day].exp += t.amount;
+        if (t.type === "income") byDay[day].inc += t.amount; else if (t.type === "expense") byDay[day].exp += t.amount;
       }
     });
     var byDaySched = {};
@@ -519,10 +531,20 @@
     if (txList.length) {
       html += '<div class="day-section-title">💰 거래</div>';
       html += txList.map(function (t) {
-        var sign = t.type === "income" ? "+" : "-";
+        var sign, amtClass, label;
+        if (t.type === "asset") {
+          var linkedAsset = state.assets.filter(function (a) { return a.id === t.assetId; })[0];
+          sign = t.assetDir === "add" ? "+" : "-";
+          amtClass = t.assetDir === "add" ? "asset-add" : "asset-sub";
+          label = (linkedAsset ? esc(linkedAsset.name) : "자산 관리");
+        } else {
+          sign = t.type === "income" ? "+" : "-";
+          amtClass = t.type;
+          label = esc(t.category);
+        }
         var ph = photosOf(t.id);
         var photo = ph.length ? '<button class="photo-btn" data-photo="' + t.id + '">📷</button>' : '';
-        return '<div class="day-row"><span class="day-cat">' + esc(t.category) + (t.memo ? ' <span class="muted">· ' + esc(t.memo) + '</span>' : '') + '</span>' + photo + '<span class="tx-amt ' + t.type + '">' + sign + won(t.amount) + '</span><button class="day-edit-btn" data-id="' + t.id + '" aria-label="수정">✏️</button><button class="tx-del" data-id="' + t.id + '" aria-label="삭제">×</button></div>';
+        return '<div class="day-row"><span class="day-cat">' + label + (t.memo ? ' <span class="muted">· ' + esc(t.memo) + '</span>' : '') + '</span>' + photo + '<span class="tx-amt ' + amtClass + '">' + sign + won(t.amount) + '</span><button class="day-edit-btn" data-id="' + t.id + '" aria-label="수정">✏️</button><button class="tx-del" data-id="' + t.id + '" aria-label="삭제">×</button></div>';
       }).join("");
     }
     if (!txList.length && !schedList.length) html += '<p class="day-hint">이 날은 기록된 내용이 없어요.</p>';
@@ -551,6 +573,9 @@
         var delTx = state.transactions.filter(function (t) { return t.id === delId; })[0];
         var msg = delTx && delTx.recurringId ? "이 거래를 삭제할까요?\n정기 거래 규칙도 함께 중지됩니다." : "이 거래를 삭제할까요?";
         if (!confirm(msg)) return;
+        if (delTx && delTx.type === "asset" && delTx.assetId) {
+          applyAssetDelta(delTx.assetId, -(delTx.assetDir === "add" ? 1 : -1) * delTx.amount);
+        }
         state.transactions = state.transactions.filter(function (t) { return t.id !== delId; });
         if (state.photos[delId]) { delete state.photos[delId]; savePhotos(); }
         if (delTx && delTx.recurringId) {
@@ -641,6 +666,30 @@
     $("txCategory").innerHTML = opts.map(function (o) { return '<option>' + esc(o) + '</option>'; }).join("");
     renderCatPills();
   }
+  function refreshAssetPicker() {
+    var sel = $("txAssetId");
+    if (!sel) return;
+    if (!state.assets.length) {
+      sel.innerHTML = '<option value="">— 자산 없음 (자산 메뉴에서 먼저 추가) —</option>';
+      return;
+    }
+    sel.innerHTML = state.assets.map(function (a) {
+      return '<option value="' + a.id + '">' + esc(a.name) + ' (' + (a.kind === "liability" ? "부채" : "자산") + ')</option>';
+    }).join("");
+    if (state.form.assetId) sel.value = state.form.assetId;
+  }
+  function applyAssetDelta(assetId, delta) {
+    state.assets = state.assets.map(function (a) {
+      return a.id === assetId ? Object.assign({}, a, { balance: a.balance + delta }) : a;
+    });
+  }
+  function toggleAssetFields(isAsset) {
+    $("assetPickField").style.display = isAsset ? "" : "none";
+    $("assetDirField").style.display = isAsset ? "" : "none";
+    $("txCategoryField").style.display = isAsset ? "none" : "";
+    $("txRepeatField").style.display = isAsset ? "none" : "";
+    if (isAsset) refreshAssetPicker();
+  }
   function renderCatPills() {
     var opts = state.categories[state.form.scope][state.form.type] || [];
     $("catPills").innerHTML = opts.length
@@ -664,7 +713,17 @@
     document.querySelectorAll(".type-btn").forEach(function (btn) {
       btn.addEventListener("click", function () {
         document.querySelectorAll(".type-btn").forEach(function (b) { b.classList.remove("active"); });
-        btn.classList.add("active"); state.form.type = btn.dataset.type; refreshCategoryOptions();
+        btn.classList.add("active");
+        state.form.type = btn.dataset.type;
+        var isAsset = btn.dataset.type === "asset";
+        toggleAssetFields(isAsset);
+        if (!isAsset) refreshCategoryOptions();
+      });
+    });
+    document.querySelectorAll(".adir-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        document.querySelectorAll(".adir-btn").forEach(function (b) { b.classList.remove("active"); });
+        btn.classList.add("active"); state.form.assetDir = btn.dataset.adir;
       });
     });
     document.querySelectorAll(".rep-btn").forEach(function (btn) {
@@ -693,6 +752,34 @@
       var amount = onlyNum($("txAmount").value), msg = $("formMsg");
       if (!amount || amount <= 0) { msg.textContent = "금액을 올바르게 입력해 주세요."; msg.className = "form-msg err"; return; }
       var date = $("txDate").value || todayStr();
+
+      // 자산 유형 처리 (별도 분기)
+      if (state.form.type === "asset") {
+        var assetId = $("txAssetId").value;
+        if (!assetId) { msg.textContent = "자산을 선택해 주세요."; msg.className = "form-msg err"; return; }
+        var assetDir = state.form.assetDir || "add";
+        var delta = assetDir === "add" ? amount : -amount;
+        if (state.form.editId) {
+          var oldTx = state.transactions.filter(function (t) { return t.id === state.form.editId; })[0];
+          if (oldTx && oldTx.type === "asset" && oldTx.assetId) {
+            var oldDelta = (oldTx.assetDir === "add" ? 1 : -1) * oldTx.amount;
+            applyAssetDelta(oldTx.assetId, -oldDelta);
+          }
+          state.transactions = state.transactions.map(function (t) {
+            if (t.id !== state.form.editId) return t;
+            return Object.assign({}, t, { scope: state.form.scope, type: "asset", category: "자산 관리", assetId: assetId, assetDir: assetDir, amount: amount, memo: $("txMemo").value.trim(), date: date });
+          });
+          applyAssetDelta(assetId, delta);
+          persist(); msg.textContent = "✓ 수정되었습니다.";
+        } else {
+          var atx = { id: uid(), date: date, scope: state.form.scope, type: "asset", category: "자산 관리", assetId: assetId, assetDir: assetDir, amount: amount, memo: $("txMemo").value.trim() };
+          state.transactions.push(atx);
+          applyAssetDelta(assetId, delta);
+          persist(); msg.textContent = "✓ 저장되었습니다.";
+        }
+        renderAll(); closeInput(); return;
+      }
+
       var base = { scope: state.form.scope, type: state.form.type, category: $("txCategory").value, amount: amount, memo: $("txMemo").value.trim() };
       var photos = state.form.photos.slice();
 
@@ -794,11 +881,22 @@
       .sort(function (a, b) { return b.date.localeCompare(a.date) || b.id.localeCompare(a.id); });
     if (!list.length) { box.innerHTML = '<p class="empty">표시할 거래가 없습니다. 입력 탭에서 기록을 추가해 보세요.</p>'; return; }
     box.innerHTML = list.map(function (t) {
-      var icon = t.scope === "business" ? "💼" : "🏠", scopeKo = t.scope === "business" ? "사업" : "개인", sign = t.type === "income" ? "+" : "-";
+      var icon = t.scope === "business" ? "💼" : "🏠", scopeKo = t.scope === "business" ? "사업" : "개인";
       var rec = t.recurringId ? ' <span class="rec-tag">🔁</span>' : '';
       var ph = photosOf(t.id);
       var photo = ph.length ? '<button class="photo-btn" data-photo="' + t.id + '" aria-label="사진 보기">📷' + (ph.length > 1 ? '<sup>' + ph.length + '</sup>' : '') + '</button>' : '';
-      return '<div class="tx-item ' + t.scope + '"><div class="tx-badge">' + icon + '</div><div class="tx-main"><div class="tx-cat">' + esc(t.category) + (t.memo ? ' · ' + esc(t.memo) : '') + rec + '</div><div class="tx-meta"><span class="scope-tag">' + scopeKo + '</span> · ' + t.date + '</div></div>' + photo + '<div class="tx-amt ' + t.type + '">' + sign + won(t.amount) + '</div><button class="tx-del" data-id="' + t.id + '" aria-label="삭제">×</button></div>';
+      var catLabel, sign, amtClass;
+      if (t.type === "asset") {
+        var linkedAsset = state.assets.filter(function (a) { return a.id === t.assetId; })[0];
+        catLabel = "💰 " + (linkedAsset ? esc(linkedAsset.name) : "자산 관리");
+        sign = t.assetDir === "add" ? "+" : "-";
+        amtClass = "asset-" + (t.assetDir || "add");
+      } else {
+        catLabel = esc(t.category);
+        sign = t.type === "income" ? "+" : "-";
+        amtClass = t.type;
+      }
+      return '<div class="tx-item ' + t.scope + '"><div class="tx-badge">' + icon + '</div><div class="tx-main"><div class="tx-cat">' + catLabel + (t.memo ? ' · ' + esc(t.memo) : '') + rec + '</div><div class="tx-meta"><span class="scope-tag">' + scopeKo + '</span> · ' + t.date + '</div></div>' + photo + '<div class="tx-amt ' + amtClass + '">' + sign + won(t.amount) + '</div><button class="tx-del" data-id="' + t.id + '" aria-label="삭제">×</button></div>';
     }).join("");
     box.querySelectorAll(".photo-btn").forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -812,6 +910,9 @@
         var delTx = state.transactions.filter(function (t) { return t.id === delId; })[0];
         var msg = delTx && delTx.recurringId ? "이 거래를 삭제할까요?\n정기 거래 규칙도 함께 중지됩니다." : "이 거래를 삭제할까요?";
         if (!confirm(msg)) return;
+        if (delTx && delTx.type === "asset" && delTx.assetId) {
+          applyAssetDelta(delTx.assetId, -(delTx.assetDir === "add" ? 1 : -1) * delTx.amount);
+        }
         state.transactions = state.transactions.filter(function (t) { return t.id !== delId; });
         if (state.photos[delId]) { delete state.photos[delId]; savePhotos(); }
         if (delTx && delTx.recurringId) {

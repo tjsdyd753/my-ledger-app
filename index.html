@@ -124,13 +124,26 @@
               <div class="seg" role="radiogroup">
                 <button type="button" class="seg-btn type-btn active" data-type="expense">지출 / 비용</button>
                 <button type="button" class="seg-btn type-btn" data-type="income">수입 / 매출</button>
+                <button type="button" class="seg-btn type-btn" data-type="asset">💰 자산</button>
+              </div>
+            </div>
+            <!-- 자산 관리 전용 필드 -->
+            <div id="assetPickField" class="field" style="display:none">
+              <label for="txAssetId">자산 선택</label>
+              <select id="txAssetId"></select>
+            </div>
+            <div id="assetDirField" class="field" style="display:none">
+              <label>처리</label>
+              <div class="seg" role="radiogroup">
+                <button type="button" class="seg-btn adir-btn active" data-adir="add">＋ 추가 (납입·입금)</button>
+                <button type="button" class="seg-btn adir-btn" data-adir="sub">－ 차감 (출금·상환)</button>
               </div>
             </div>
             <div class="field">
               <label for="txAmount">금액 (원)</label>
               <input type="text" id="txAmount" inputmode="numeric" placeholder="0" autocomplete="off" />
             </div>
-            <div class="field">
+            <div id="txCategoryField" class="field">
               <label for="txCategory">카테고리</label>
               <select id="txCategory"></select>
               <button type="button" id="catEditToggle" class="cat-edit-toggle">＋ 카테고리 추가·삭제</button>
@@ -146,7 +159,7 @@
               <label for="txDate">날짜</label>
               <input type="date" id="txDate" />
             </div>
-            <div class="field">
+            <div id="txRepeatField" class="field">
               <label>반복 <small class="muted">(정기 구독·임대료 등 자동 등록)</small></label>
               <div class="seg" role="radiogroup">
                 <button type="button" class="seg-btn rep-btn active" data-repeat="once">한 번</button>

@@ -212,6 +212,9 @@ body {
   box-shadow: 0 1px 3px rgba(0,0,0,.1);
 }
 .seg-btn.type-btn.active { color: var(--primary); }
+.seg-btn.type-btn[data-type="asset"].active { color: #0891b2; }
+.tx-amt.asset-add { color: var(--income); }
+.tx-amt.asset-sub { color: var(--ink); }
 
 .btn-primary {
   font-family: inherit; font-size: 16.5px; font-weight: 700; cursor: pointer;
