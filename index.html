@@ -531,6 +531,11 @@
         <p class="muted">기간별 수입·지출·자산을 한눈에 살펴보세요.</p>
       </div>
       <div class="panel stats-panel">
+        <!-- 개인 / 사업 -->
+        <div class="seg stats-scope-seg" id="statsScopeSeg" role="radiogroup">
+          <button type="button" class="seg-btn active" data-sscope="personal">🏠 개인</button>
+          <button type="button" class="seg-btn" data-sscope="business">💼 사업</button>
+        </div>
         <!-- 월간 / 연간 -->
         <div class="seg stats-mode-seg" id="statsModeSeg" role="radiogroup">
           <button type="button" class="seg-btn active" data-smode="month">월간</button>
@@ -546,7 +551,7 @@
         <div class="seg stats-type-seg" id="statsTypeSeg" role="radiogroup">
           <button type="button" class="seg-btn active" data-stype="expense">지출</button>
           <button type="button" class="seg-btn" data-stype="income">수입</button>
-          <button type="button" class="seg-btn" data-stype="asset">자산</button>
+          <button type="button" class="seg-btn" id="statsAssetBtn" data-stype="asset">자산</button>
         </div>
         <!-- 도넛 차트 -->
         <div class="stats-donut-wrap" id="statsDonut"></div>

@@ -1403,6 +1403,7 @@
   }
 
   /* ================= 통계 ================= */
+  var statsScope = "personal";  // personal | business
   var statsMode = "month";      // month | year
   var statsType = "expense";    // expense | income | asset
   var statsDate = new Date();   // 기준 기간
@@ -1442,13 +1443,19 @@
   }
   function renderStats() {
     if (!$("statsPeriodLabel")) return;
+    // 사업 구분에서는 자산 탭 숨김 (자산은 개인 전용)
+    var isBiz = statsScope === "business";
+    $("statsAssetBtn").style.display = isBiz ? "none" : "";
+    if (isBiz && statsType === "asset") statsType = "expense";
+
     $("statsPeriodLabel").textContent = statsPeriodLabel();
+    document.querySelectorAll("#statsScopeSeg .seg-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.sscope === statsScope); });
     document.querySelectorAll("#statsModeSeg .seg-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.smode === statsMode); });
     document.querySelectorAll("#statsTypeSeg .seg-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.stype === statsType); });
 
     var sums = {}, total = 0;
     state.transactions.forEach(function (t) {
-      if (t.type !== statsType || !statsInPeriod(t)) return;
+      if (t.scope !== statsScope || t.type !== statsType || !statsInPeriod(t)) return;
       var key;
       if (statsType === "asset") {
         var a = state.assets.filter(function (x) { return x.id === t.assetId; })[0];
@@ -1480,6 +1487,9 @@
   }
   function setupStatsOnce() {
     if (_statsReady) return; _statsReady = true;
+    document.querySelectorAll("#statsScopeSeg .seg-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () { statsScope = btn.dataset.sscope; renderStats(); });
+    });
     document.querySelectorAll("#statsModeSeg .seg-btn").forEach(function (btn) {
       btn.addEventListener("click", function () { statsMode = btn.dataset.smode; renderStats(); });
     });
